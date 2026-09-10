@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>חיסור במאונך של אמיליה</title>
+<style>
+  :root{
+    --bg:#fdf7f2; --card:#ffffff; --ink:#33303c; --muted:#8a8496;
+    --pink:#ff7aa8; --pink-d:#e85f8e; --mint:#2fbf9b; --sky:#5aa9f7;
+    --sun:#ffc75a; --bad:#ef5f6b; --line:#efe7e0; --violet:#8b7cf6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    background:linear-gradient(180deg,#fff0f5 0%,var(--bg) 45%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Rubik,Arial,sans-serif;
+    display:flex; flex-direction:column; min-height:100%;
+  }
+  .wrap{flex:1; display:flex; flex-direction:column; max-width:420px; margin:0 auto; width:100%; padding:12px 14px 18px}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px}
+  .hello{font-size:15px; font-weight:700; line-height:1.35}
+  .hello span{color:var(--pink-d)}
+  .ghost{
+    background:#fff; border:1px solid var(--line); color:var(--muted);
+    border-radius:999px; padding:7px 12px; font-size:13px; font-weight:600; cursor:pointer;
+    flex-shrink:0;
+  }
+  .stats{display:flex; gap:7px; margin:6px 0 2px}
+  .chip{
+    flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:8px 4px; text-align:center;
+  }
+  .chip b{display:block; font-size:17px; line-height:1.2}
+  .chip small{color:var(--muted); font-size:10px}
+  .sync{text-align:center; color:var(--muted); font-size:11px; min-height:15px; margin:0 0 6px; font-weight:500}
+  .demo-btn{
+    width:100%; margin:0 0 8px; padding:10px; border-radius:14px;
+    border:1px dashed #f5c0d4; background:#fff7fa; color:var(--pink-d);
+    font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .demo-btn:active{background:#ffe8f0}
+  .qcard{
+    background:var(--card); border:1px solid var(--line); border-radius:24px;
+    padding:14px 12px 16px; text-align:center; box-shadow:0 6px 18px rgba(80,60,70,.05);
+  }
+  .qlabel{font-size:12px; color:var(--muted); font-weight:600; margin-bottom:6px}
+  .board{
+    direction:ltr; display:inline-block; margin:0 auto; text-align:center;
+    font-variant-numeric:tabular-nums; user-select:none;
+  }
+  .board-row{
+    display:flex; align-items:flex-end; justify-content:flex-end; gap:2px;
+    min-height:36px;
+  }
+  .board-row.op{margin-top:2px}
+  .op-sign{
+    width:28px; font-size:22px; font-weight:800; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; padding-bottom:4px;
+  }
+  .col{
+    width:28px; text-align:center; position:relative;
+  }
+  .col .digit{
+    font-size:26px; font-weight:800; line-height:1.2; color:var(--ink);
+    min-height:32px; display:flex; align-items:center; justify-content:center;
+  }
+  .col .mark{
+    font-size:10px; font-weight:700; color:var(--violet); min-height:14px;
+    line-height:1; opacity:.9;
+  }
+  .col .mark.strike{text-decoration:line-through; color:var(--muted)}
+  .hline{
+    border-top:3px solid var(--ink); margin:4px 0 6px; width:100%;
+  }
+  .ans-row .ans-cell{
+    width:28px; height:40px; border-radius:10px;
+    border:2px dashed var(--line); background:#fffdfa;
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; font-weight:800; color:var(--ink); cursor:pointer;
+  }
+  .ans-row .ans-cell.active{border-style:solid; border-color:var(--sky); box-shadow:0 0 0 3px rgba(90,169,247,.18)}
+  .ans-row .ans-cell.filled{border-style:solid; border-color:var(--sky)}
+  .ans-row .ans-cell.ok{border-color:var(--mint); background:#eefaf6; color:var(--mint)}
+  .ans-row .ans-cell.no{border-color:var(--bad); background:#fdeef0; color:var(--bad)}
+  .ans-row .ans-cell.hint-wrong{border-color:#f0a0a8; background:#fff5f6}
+  .msg{min-height:28px; margin-top:10px; font-size:15px; font-weight:700}
+  .msg.ok{color:var(--mint)} .msg.no{color:var(--bad)} .msg.info{color:var(--sky-d,#348fc0)}
+  .msg small{display:block; color:var(--muted); font-weight:600; font-size:12px; margin-top:2px}
+  .pad{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; direction:ltr}
+  .key{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:14px 0; font-size:24px; font-weight:700; cursor:pointer; user-select:none;
+  }
+  .key:active{transform:translateY(1px); background:#f7f2ee}
+  .key.go{background:var(--mint); border-color:var(--mint); color:#fff; font-size:17px}
+  .key.del{background:#fff2f5; border-color:#ffd9e3; color:var(--pink-d); font-size:18px}
+  .send{
+    margin-top:12px; width:100%; padding:13px; border-radius:16px; border:none;
+    background:var(--pink); color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .send:active{background:var(--pink-d)}
+  .copy{margin-top:7px; width:100%; padding:10px; border-radius:14px; border:1px solid var(--line); background:#fff; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer}
+  .hidden{display:none !important}
+  h2{font-size:18px; margin:4px 0 10px}
+  h3{font-size:14px; margin:16px 0 8px; color:var(--muted)}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:13px}
+  table{width:100%; border-collapse:collapse; font-size:12px}
+  th,td{padding:6px 4px; text-align:right; border-bottom:1px solid var(--line)}
+  th{color:var(--muted); font-weight:600; font-size:11px}
+  .hard{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
+  .hard span{background:#fdeef0; color:#a3262f; border-radius:10px; padding:5px 9px; font-size:12px; font-weight:700}
+  .empty{color:var(--muted); font-size:14px; line-height:1.6; text-align:center; padding:12px 4px}
+  .danger{margin-top:14px; width:100%; padding:11px; border-radius:14px; border:1px solid #ffd9e3; background:#fff; color:var(--bad); font-weight:700; font-size:14px; cursor:pointer}
+  .pin{width:100%; padding:14px; font-size:22px; text-align:center; letter-spacing:8px; border-radius:14px; border:1px solid var(--line); direction:ltr}
+  .note{color:var(--muted); font-size:12px; margin-top:8px; text-align:center}
+  .summary-big{font-size:28px; font-weight:800; color:var(--pink-d); margin:8px 0}
+  .summary-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0}
+  .summary-grid .chip{padding:12px 6px}
+  .primary-btn{
+    width:100%; margin-top:10px; padding:14px; border-radius:16px; border:none;
+    background:var(--mint); color:#fff; font-size:16px; font-weight:700; cursor:pointer;
+  }
+  /* Demo / guide overlay */
+  .demo-overlay{
+    position:fixed; inset:0; background:rgba(40,30,40,.45); z-index:40;
+    display:flex; align-items:flex-end; justify-content:center; padding:12px;
+  }
+  .demo-sheet{
+    background:#fff; border-radius:22px 22px 16px 16px; width:100%; max-width:420px;
+    padding:16px 14px 18px; max-height:92vh; overflow:auto;
+    box-shadow:0 -8px 30px rgba(0,0,0,.12);
+  }
+  .demo-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px}
+  .demo-head h2{margin:0; font-size:17px}
+  .demo-narr{
+    font-size:15px; font-weight:700; line-height:1.45; min-height:48px;
+    background:#fff7fa; border-radius:14px; padding:10px 12px; margin-bottom:10px;
+  }
+  .demo-board{
+    direction:ltr; text-align:left; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:18px; line-height:1.4; font-weight:700; white-space:pre;
+    background:#f7f2ee; border-radius:14px; padding:12px 14px; overflow-x:auto;
+  }
+  .demo-board .hl{background:#ffe08a; border-radius:4px; padding:0 2px}
+  .demo-board .dim{color:#b0a8b0}
+  .demo-controls{display:flex; gap:8px; margin-top:12px}
+  .demo-controls button{
+    flex:1; padding:11px; border-radius:14px; border:1px solid var(--line);
+    background:#fff; font-weight:700; font-size:14px; cursor:pointer;
+  }
+  .demo-controls .primary{background:var(--mint); border-color:var(--mint); color:#fff}
+  .demo-controls .ghostish{color:var(--muted)}
+  .demo-note{margin-top:8px; font-size:12px; color:var(--muted); text-align:center; font-weight:600}
+  .tries{font-size:12px; color:var(--muted); font-weight:600; margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ PRACTICE ============ -->
+  <div id="practice" class="">
+    <div class="top">
+      <div class="hello">חיסור במאונך של <span>אמיליה</span></div>
+      <button class="ghost" id="btnParent" type="button">הורים</button>
+    </div>
+
+    <div class="stats">
+      <div class="chip"><b id="sCount">0/20</b><small>תרגילים</small></div>
+      <div class="chip"><b id="sFirst">0</b><small>בפעם הראשונה</small></div>
+      <div class="chip"><b id="sAcc">—</b><small>הצלחה</small></div>
+    </div>
+    <div class="sync" id="syncStatus"></div>
+    <button class="demo-btn" id="btnDemo" type="button">תראי איך · הדגמה איטית</button>
+
+    <div class="qcard">
+      <div class="qlabel" id="qLabel">תרגיל 1 מתוך 20 · חיסור במאונך</div>
+      <div class="board" id="board" aria-label="תרגיל חיסור"></div>
+      <div class="tries" id="triesLabel">ניסיונות: 3</div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="pad" id="pad"></div>
+    <button class="send hidden" id="btnReportPractice" type="button">שלחי דוח לאמא</button>
+  </div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div id="summary" class="hidden">
+    <div class="top">
+      <div class="hello">סיכום ישיבה</div>
+    </div>
+    <div class="panel" id="summaryBody"></div>
+    <button class="send" id="btnReport" type="button">שלחי דוח לאמא בוואטסאפ</button>
+    <button class="copy" id="btnCopy" type="button">העתיקי את הדוח</button>
+    <button class="primary-btn" id="btnNewSession" type="button">ישיבה חדשה · 20 תרגילים</button>
+  </div>
+
+  <!-- ============ PIN ============ -->
+  <div id="pinScreen" class="hidden">
+    <div class="top">
+      <div class="hello">מסך הורים</div>
+      <button class="ghost" id="btnPinBack" type="button">חזרה</button>
+    </div>
+    <div class="panel">
+      <h2>הקלידו קוד</h2>
+      <input class="pin" id="pinInput" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" style="">
+      <div class="note" id="pinNote">ארבע ספרות</div>
+    </div>
+  </div>
+
+  <!-- ============ PARENT ============ -->
+  <div id="parent" class="hidden">
+    <div class="top">
+      <div class="hello">ההתקדמות של אמיליה</div>
+      <button class="ghost" id="btnBack" type="button">חזרה לתרגול</button>
+    </div>
+    <div id="parentBody"></div>
+    <button class="danger" id="btnReset" type="button">איפוס כל הנתונים</button>
+  </div>
+
+</div>
+
+<!-- Demo / Guide overlay -->
+<div id="demoOverlay" class="demo-overlay hidden" role="dialog" aria-modal="true">
+  <div class="demo-sheet">
+    <div class="demo-head">
+      <h2 id="demoTitle">איך מחסירים במאונך</h2>
+      <button class="ghost" id="btnDemoClose" type="button">סגור</button>
+    </div>
+    <div class="demo-narr" id="demoNarr">…</div>
+    <div class="demo-board" id="demoBoard" aria-live="polite"></div>
+    <div class="demo-controls">
+      <button type="button" class="ghostish" id="btnDemoPause">השהי</button>
+      <button type="button" class="primary" id="btnDemoNext">הבא לאט</button>
+    </div>
+    <div class="demo-note" id="demoNote">צעד־צעד · מימין לשמאל · עם הלוואות</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------
+   חיסור במאונך של אמיליה — localStorage + Supabase (kefel_state).
+   Session = 20 fresh problems; digit-column answer; up to 3 tries;
+   guided borrow walkthrough on 3rd miss; demo mode; parent PIN.
+----------------------------------------------------------------*/
+
+var CLOUD = {
+  url: "https://nrxhjzmmmzqjytmdgzjg.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yeGhqem1tbXpxanl0bWRnempnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDg3MTAsImV4cCI6MjEwNDEyNDcxMH0.5KYX69e1AyXqtHHRejFarK-r1yoXdmlpav2Oazb2WIs",
+  rowId: "emilia-hisur"
+};
+
+var PIN = "2604", KEY = "hisur_amelia_v1", SESSION_SIZE = 20, MAX_ATTEMPTS = 3;
+var SEEN_CAP = 400;
+var mem = null;
+var pushTimer = null;
+var syncEl = null;
+
+function cloudConfigured(){
+  return !!(CLOUD.url && CLOUD.anonKey && CLOUD.url.indexOf("https://") === 0 && CLOUD.anonKey.length > 20);
+}
+
+function setSync(text){
+  if(!syncEl) syncEl = document.getElementById("syncStatus");
+  if(syncEl) syncEl.textContent = text || "";
+}
+
+function blank(){
+  return {
+    sessions: [],
+    answers: 0,
+    seen: [],
+    patterns: {},
+    activeSession: null
+  };
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : blank();
+  }catch(e){ return mem || (mem = blank()); }
+}
+function saveLocal(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ mem = db; }
+}
+function save(opts){
+  opts = opts || {};
+  saveLocal();
+  if(opts.immediate){
+    if(pushTimer){ clearTimeout(pushTimer); pushTimer = null; }
+    cloudPush();
+  }else{
+    schedulePush();
+  }
+}
+function schedulePush(){
+  if(pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(function(){
+    pushTimer = null;
+    cloudPush();
+  }, 800);
+}
+
+function cloudHeaders(){
+  return {
+    "apikey": CLOUD.anonKey,
+    "Authorization": "Bearer " + CLOUD.anonKey,
+    "Content-Type": "application/json"
+  };
+}
+
+function cloudPull(){
+  if(!cloudConfigured()){
+    setSync("");
+    return Promise.resolve(false);
+  }
+  setSync("שומר בענן…");
+  var url = CLOUD.url + "/rest/v1/kefel_state?id=eq." + encodeURIComponent(CLOUD.rowId) + "&select=data,updated_at";
+  return fetch(url, {
+    method: "GET",
+    headers: cloudHeaders()
+  }).then(function(res){
+    if(!res.ok) throw new Error("pull " + res.status);
+    return res.json();
+  }).then(function(rows){
+    function score(d){
+      if(!d || typeof d !== "object") return 0;
+      var answers = typeof d.answers === "number" ? d.answers : 0;
+      var sessions = d.sessions || [];
+      var withQ = 0;
+      for(var i = 0; i < sessions.length; i++){
+        if(sessions[i] && sessions[i].q > 0) withQ++;
+      }
+      return answers * 1000 + withQ;
+    }
+    var cloudData = null;
+    if(rows && rows.length && rows[0] && rows[0].data){
+      var data = rows[0].data;
+      if(typeof data === "string"){
+        try{ data = JSON.parse(data); }catch(e){ data = null; }
+      }
+      if(data && typeof data === "object") cloudData = data;
+    }
+    var localScore = score(db);
+    var cloudScore = score(cloudData);
+    if(cloudScore > localScore){
+      db = cloudData;
+      normalizeDb();
+      saveLocal();
+      setSync("מסונכרן");
+      return true;
+    } else if(localScore > 0 && localScore >= cloudScore){
+      return cloudPush();
+    } else {
+      setSync("מסונכרן");
+      return false;
+    }
+  }).catch(function(){
+    setSync("אין רשת — נשמר במכשיר");
+    return false;
+  });
+}
+
+function cloudPush(){
+  if(!cloudConfigured()) return Promise.resolve(false);
+  setSync("שומר בענן…");
+  var url = CLOUD.url + "/rest/v1/kefel_state?on_conflict=id";
+  var body = {
+    id: CLOUD.rowId,
+    data: db,
+    updated_at: new Date().toISOString()
+  };
+  var headers = cloudHeaders();
+  headers["Prefer"] = "resolution=merge-duplicates,return=minimal";
+  return fetch(url, {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify(body)
+  }).then(function(res){
+    if(!res.ok) throw new Error("push " + res.status);
+    setSync("מסונכרן");
+    return true;
+  }).catch(function(){
+    setSync("אין רשת — נשמר במכשיר");
+    return false;
+  });
+}
+
+function normalizeDb(){
+  if(!db.sessions) db.sessions = [];
+  if(typeof db.answers !== "number") db.answers = 0;
+  if(!Array.isArray(db.seen)) db.seen = [];
+  if(!db.patterns || typeof db.patterns !== "object") db.patterns = {};
+  if(db.activeSession && (!db.activeSession.problems || db.activeSession.problems.length !== SESSION_SIZE)){
+    db.activeSession = null;
+  }
+}
+
+var db = load();
+normalizeDb();
+
+/* ---------------- helpers ---------------- */
+function randInt(a, b){ return a + Math.floor(Math.random() * (b - a + 1)); }
+function pad2(n){ return (n < 10 ? "0" : "") + n; }
+function fmtDate(ts){ var d = new Date(ts); return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear(); }
+function fmtTime(ts){ var d = new Date(ts); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+function fmtDur(ms){
+  var m = Math.round(ms / 60000);
+  if(m < 1) return "פחות מדקה";
+  if(m < 60) return m + " דק׳";
+  return Math.floor(m / 60) + " שע׳ " + (m % 60) + " דק׳";
+}
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function phash(minuend, subtrahend){ return minuend + "-" + subtrahend; }
+
+function analyzeBorrow(minuend, subtrahend){
+  var a = String(minuend);
+  var b = String(subtrahend);
+  var n = Math.max(a.length, b.length);
+  while(a.length < n) a = "0" + a;
+  while(b.length < n) b = "0" + b;
+  var borrowCount = 0;
+  var zeroBridge = false;
+  var need = 0;
+  for(var i = n - 1; i >= 0; i--){
+    var ad = a.charCodeAt(i) - 48 - need;
+    var bd = b.charCodeAt(i) - 48;
+    if(ad < bd){
+      borrowCount++;
+      if(ad + need === 0 || a.charAt(i) === "0") zeroBridge = true;
+      need = 1;
+    } else {
+      need = 0;
+    }
+  }
+  var pattern = "simple";
+  if(borrowCount === 0) pattern = "no_borrow";
+  else if(zeroBridge) pattern = "borrow_zero";
+  else if(borrowCount >= 3) pattern = "multi_borrow";
+  else pattern = "borrow";
+  return { borrowCount: borrowCount, zeroBridge: zeroBridge, pattern: pattern, cols: n };
+}
+
+function patternLabel(p){
+  if(p === "borrow_zero") return "הלוואה דרך אפס";
+  if(p === "multi_borrow") return "הלוואות רבות";
+  if(p === "borrow") return "הלוואה";
+  if(p === "no_borrow") return "בלי הלוואה";
+  return p;
+}
+
+function patternWeight(p){
+  var f = db.patterns[p] || { seen: 0, wrong: 0, guided: 0 };
+  var w = 1;
+  if(f.seen === 0) w += 1.5;
+  if(f.seen > 0){
+    var rate = f.wrong / f.seen;
+    w += 5 * rate;
+    w += 3 * ((f.guided || 0) / f.seen);
+  }
+  /* baseline preference: harder borrow patterns more common */
+  if(p === "borrow_zero") w += 2.2;
+  else if(p === "multi_borrow") w += 1.8;
+  else if(p === "borrow") w += 1.2;
+  else w += 0.35;
+  return w;
+}
+
+function rememberSeen(hash){
+  db.seen.push(hash);
+  if(db.seen.length > SEEN_CAP) db.seen = db.seen.slice(db.seen.length - SEEN_CAP);
+}
+
+function seenSet(){
+  var s = {};
+  for(var i = 0; i < db.seen.length; i++) s[db.seen[i]] = true;
+  return s;
+}
+
+/* Generate one problem of a desired pattern family */
+function generateCandidate(wantPattern){
+  var minuend, subtrahend, tries = 0, info;
+  while(tries < 80){
+    tries++;
+    var kind = randInt(1, 10);
+    if(wantPattern === "borrow_zero" || (wantPattern === null && kind <= 3)){
+      /* 5-digit with internal zeros, force borrow across zero */
+      var left = randInt(2, 9);
+      var mid = "0" + String(randInt(0, 9)) + "0";
+      var right = randInt(0, 9);
+      minuend = parseInt(String(left) + mid + String(right) + String(randInt(0, 9)), 10);
+      if(String(minuend).length < 5) minuend = randInt(10000, 99999);
+      /* craft subtrahend that forces borrow at zero columns */
+      var mStr = String(minuend);
+      var sDigits = [];
+      for(var i = 0; i < mStr.length; i++){
+        var md = mStr.charCodeAt(i) - 48;
+        if(md === 0) sDigits.push(randInt(1, 9));
+        else if(i === mStr.length - 1) sDigits.push(randInt(md + 1 > 9 ? md : md + 1, 9));
+        else sDigits.push(randInt(0, 9));
+      }
+      /* ensure subtrahend smaller overall */
+      subtrahend = parseInt(sDigits.join(""), 10);
+      if(subtrahend >= minuend){
+        subtrahend = randInt(1000, Math.min(9999, minuend - 1));
+      }
+      /* sometimes 4-digit subtrahend under 5-digit */
+      if(Math.random() < 0.45 && minuend > 10000){
+        subtrahend = randInt(1000, 9999);
+        if(subtrahend >= minuend) subtrahend = randInt(1000, minuend - 1);
+      }
+    } else if(wantPattern === "multi_borrow" || (wantPattern === null && kind <= 6)){
+      minuend = randInt(10000, 99999);
+      if(Math.random() < 0.55){
+        subtrahend = randInt(1000, 9999);
+      } else {
+        subtrahend = randInt(10000, minuend - 1);
+      }
+      if(subtrahend >= minuend) subtrahend = randInt(1000, Math.min(9999, minuend - 1));
+    } else if(wantPattern === "no_borrow"){
+      /* build digit-wise without borrow */
+      var len = randInt(4, 5);
+      var md = [], sd = [];
+      for(var j = 0; j < len; j++){
+        var top = j === 0 ? randInt(1, 9) : randInt(0, 9);
+        var bot = j === 0 ? randInt(0, top) : randInt(0, top);
+        if(j === 0 && bot === 0 && len > 1) bot = 0;
+        md.push(top); sd.push(bot);
+      }
+      minuend = parseInt(md.join(""), 10);
+      subtrahend = parseInt(sd.join(""), 10);
+      if(subtrahend === 0) subtrahend = randInt(1, Math.min(999, minuend - 1));
+      if(subtrahend >= minuend) continue;
+    } else {
+      /* single/few borrow — typical worksheet: 5 − 4 digits */
+      minuend = randInt(10000, 99999);
+      subtrahend = randInt(1000, 9999);
+      if(Math.random() < 0.25) subtrahend = randInt(10000, minuend - 1);
+      if(subtrahend >= minuend) subtrahend = randInt(1000, Math.min(9999, minuend - 1));
+    }
+    if(!(minuend > subtrahend) || subtrahend < 1) continue;
+    info = analyzeBorrow(minuend, subtrahend);
+    if(wantPattern && info.pattern !== wantPattern){
+      /* accept close matches for multi/borrow */
+      if(wantPattern === "multi_borrow" && info.borrowCount >= 2) break;
+      if(wantPattern === "borrow" && info.borrowCount >= 1 && !info.zeroBridge) break;
+      continue;
+    }
+    break;
+  }
+  if(!info) info = analyzeBorrow(minuend, subtrahend);
+  var diff = minuend - subtrahend;
+  return {
+    minuend: minuend,
+    subtrahend: subtrahend,
+    answer: diff,
+    pattern: info.pattern,
+    borrowCount: info.borrowCount,
+    zeroBridge: info.zeroBridge,
+    hash: phash(minuend, subtrahend)
+  };
+}
+
+function pickPatternForSlot(slot, sessionPatterns){
+  /* Ensure variety across 20: mix of patterns, bias to weak ones */
+  var types = ["borrow_zero", "multi_borrow", "borrow", "borrow", "no_borrow"];
+  /* force some zeros early/mid */
+  if(slot === 2 || slot === 8 || slot === 14) return "borrow_zero";
+  if(slot === 4 || slot === 11 || slot === 17) return "multi_borrow";
+  if(slot === 0 || slot === 19) return "borrow";
+  /* weighted random by weakness */
+  var pool = [], total = 0;
+  for(var i = 0; i < types.length; i++){
+    var w = patternWeight(types[i]);
+    pool.push({ p: types[i], w: w });
+    total += w;
+  }
+  var r = Math.random() * total, acc = 0;
+  for(var k = 0; k < pool.length; k++){
+    acc += pool[k].w;
+    if(r <= acc) return pool[k].p;
+  }
+  return "borrow";
+}
+
+function buildSessionProblems(){
+  var seen = seenSet();
+  var problems = [];
+  var sessionHashes = {};
+  for(var i = 0; i < SESSION_SIZE; i++){
+    var want = pickPatternForSlot(i, problems);
+    var p = null;
+    for(var t = 0; t < 60; t++){
+      var cand = generateCandidate(want);
+      if(seen[cand.hash] || sessionHashes[cand.hash]) continue;
+      if(cand.answer <= 0) continue;
+      p = cand;
+      break;
+    }
+    if(!p){
+      /* fallback: any fresh */
+      for(var t2 = 0; t2 < 80; t2++){
+        var c2 = generateCandidate(null);
+        if(seen[c2.hash] || sessionHashes[c2.hash]) continue;
+        if(c2.answer > 0){ p = c2; break; }
+      }
+    }
+    if(!p){
+      var m = randInt(20000, 90000), s = randInt(1000, 9999);
+      if(s >= m) s = m - randInt(100, 5000);
+      p = {
+        minuend: m, subtrahend: s, answer: m - s,
+        pattern: analyzeBorrow(m, s).pattern,
+        borrowCount: analyzeBorrow(m, s).borrowCount,
+        zeroBridge: analyzeBorrow(m, s).zeroBridge,
+        hash: phash(m, s)
+      };
+    }
+    sessionHashes[p.hash] = true;
+    rememberSeen(p.hash);
+    problems.push({
+      minuend: p.minuend,
+      subtrahend: p.subtrahend,
+      answer: p.answer,
+      pattern: p.pattern,
+      borrowCount: p.borrowCount,
+      zeroBridge: !!p.zeroBridge,
+      hash: p.hash,
+      attempts: 0,
+      firstTry: false,
+      within3: false,
+      guided: false,
+      ms: 0,
+      done: false
+    });
+  }
+  return problems;
+}
+
+/* ---------------- active session ---------------- */
+var curIdx = 0;
+var cur = null;
+var ansDigits = []; /* left-to-right visual, index 0 = leftmost */
+var activeCol = 0; /* index into ansDigits; fill prefers ones (right) */
+var locked = false;
+var problemStartedAt = 0;
+var guideMode = false; /* after 3 misses, guide then continue */
+
+function digitsOf(n, width){
+  var s = String(n);
+  while(s.length < width) s = "0" + s;
+  return s.split("");
+}
+
+function boardWidth(p){
+  return Math.max(String(p.minuend).length, String(p.subtrahend).length, String(p.answer).length);
+}
+
+function startNewSession(){
+  var problems = buildSessionProblems();
+  db.activeSession = {
+    start: Date.now(),
+    last: Date.now(),
+    ms: 0,
+    q: 0,
+    firstTry: 0,
+    within3: 0,
+    guided: 0,
+    problems: problems,
+    finished: false
+  };
+  curIdx = 0;
+  save({ immediate: true });
+  loadProblem(0);
+  show("practice");
+}
+
+function resumeOrStart(){
+  if(db.activeSession && !db.activeSession.finished && db.activeSession.problems && db.activeSession.problems.length === SESSION_SIZE){
+    var done = 0;
+    for(var i = 0; i < db.activeSession.problems.length; i++){
+      if(db.activeSession.problems[i].done) done++;
+    }
+    if(done >= SESSION_SIZE){
+      finishSession();
+      return;
+    }
+    curIdx = done;
+    loadProblem(curIdx);
+    show("practice");
+    return;
+  }
+  startNewSession();
+}
+
+function touchSession(){
+  var s = db.activeSession;
+  if(!s) return;
+  var now = Date.now();
+  var dt = now - s.last;
+  if(dt > 0 && dt < 60000) s.ms += dt;
+  s.last = now;
+}
+
+function loadProblem(idx){
+  curIdx = idx;
+  cur = db.activeSession.problems[idx];
+  var w = boardWidth(cur);
+  ansDigits = [];
+  for(var i = 0; i < w; i++) ansDigits.push("");
+  activeCol = w - 1; /* start at ones */
+  locked = false;
+  guideMode = false;
+  problemStartedAt = Date.now();
+  renderBoard();
+  updateStats();
+  document.getElementById("msg").textContent = "";
+  document.getElementById("msg").className = "msg";
+  document.getElementById("triesLabel").textContent = "ניסיונות: " + (MAX_ATTEMPTS - cur.attempts);
+  document.getElementById("qLabel").textContent = "תרגיל " + (idx + 1) + " מתוך " + SESSION_SIZE + " · חיסור במאונך";
+}
+
+function renderBoard(){
+  var w = ansDigits.length;
+  var mDigs = digitsOf(cur.minuend, w);
+  var sDigs = digitsOf(cur.subtrahend, w);
+  /* hide leading zeros on minuend display except keep alignment */
+  var html = "";
+  html += '<div class="board-row" id="minRow">';
+  html += '<div class="op-sign"></div>';
+  for(var i = 0; i < w; i++){
+    var show = mDigs[i];
+    if(i === 0 && cur.minuend < Math.pow(10, w - 1)){
+      /* leading pad zeros for shorter? minuend usually full width */
+    }
+    var blankLead = (i < w - String(cur.minuend).length);
+    html += '<div class="col"><div class="mark" id="mk' + i + '"></div><div class="digit">' +
+            (blankLead ? "" : show) + "</div></div>";
+  }
+  html += "</div>";
+
+  html += '<div class="board-row op" id="subRow">';
+  html += '<div class="op-sign">−</div>';
+  for(var j = 0; j < w; j++){
+    var blankS = (j < w - String(cur.subtrahend).length);
+    html += '<div class="col"><div class="digit">' + (blankS ? "" : sDigs[j]) + "</div></div>";
+  }
+  html += "</div>";
+  html += '<div class="hline"></div>';
+
+  html += '<div class="board-row ans-row" id="ansRow">';
+  html += '<div class="op-sign"></div>';
+  for(var k = 0; k < w; k++){
+    var cls = "ans-cell";
+    if(k === activeCol && !locked) cls += " active";
+    if(ansDigits[k] !== "") cls += " filled";
+    html += '<div class="' + cls + '" data-col="' + k + '">' + (ansDigits[k] === "" ? "" : ansDigits[k]) + "</div>";
+  }
+  html += "</div>";
+
+  document.getElementById("board").innerHTML = html;
+  var cells = document.querySelectorAll(".ans-cell");
+  for(var c = 0; c < cells.length; c++){
+    cells[c].addEventListener("click", function(ev){
+      if(locked) return;
+      activeCol = parseInt(ev.currentTarget.getAttribute("data-col"), 10);
+      renderBoard();
+    });
+  }
+}
+
+function updateStats(){
+  var s = db.activeSession;
+  if(!s) return;
+  document.getElementById("sCount").textContent = s.q + "/" + SESSION_SIZE;
+  document.getElementById("sFirst").textContent = s.firstTry;
+  document.getElementById("sAcc").textContent = s.q ? Math.round(100 * s.within3 / s.q) + "%" : "—";
+}
+
+function typedValue(){
+  var s = ansDigits.join("");
+  if(s === "" || /^0+$/.test(s) && s.length > 1){
+    /* allow leading blanks: interpret as number ignoring leading empty */
+  }
+  var cleaned = "";
+  var started = false;
+  for(var i = 0; i < ansDigits.length; i++){
+    if(ansDigits[i] === ""){
+      if(started) return null; /* hole in middle */
+      continue;
+    }
+    started = true;
+    cleaned += ansDigits[i];
+  }
+  if(!started) return null;
+  return parseInt(cleaned, 10);
+}
+
+function compareColumns(guess){
+  var w = ansDigits.length;
+  var correct = digitsOf(cur.answer, w);
+  var gStr = String(guess);
+  while(gStr.length < w) gStr = "0" + gStr;
+  if(gStr.length > w) gStr = gStr.slice(-w);
+  var wrong = [];
+  for(var i = 0; i < w; i++){
+    var blankLeadAns = (i < w - String(cur.answer).length);
+    var expect = blankLeadAns ? "0" : correct[i];
+    /* compare visible answer digits */
+    if(gStr.charAt(i) !== expect){
+      /* if both are leading zero equivalent for value, skip only if outside answer width */
+      if(!(blankLeadAns && gStr.charAt(i) === "0")) wrong.push(i);
+    }
+  }
+  return wrong;
+}
+
+function markWrongCols(wrongIdx){
+  var cells = document.querySelectorAll(".ans-cell");
+  for(var i = 0; i < cells.length; i++){
+    if(wrongIdx.indexOf(i) >= 0) cells[i].classList.add("hint-wrong");
+  }
+}
+
+function trackPattern(pattern, opts){
+  if(!db.patterns[pattern]) db.patterns[pattern] = { seen: 0, wrong: 0, guided: 0, correct: 0 };
+  var f = db.patterns[pattern];
+  f.seen++;
+  if(opts.wrong) f.wrong++;
+  if(opts.guided) f.guided++;
+  if(opts.correct) f.correct++;
+}
+
+function submitAnswer(){
+  if(locked || !cur) return;
+  var val = typedValue();
+  if(val === null){
+    document.getElementById("msg").className = "msg no";
+    document.getElementById("msg").textContent = "מלאי את התשובה ספרה־ספרה";
+    return;
+  }
+  touchSession();
+  var elapsed = Date.now() - problemStartedAt;
+  cur.attempts++;
+  var s = db.activeSession;
+  document.getElementById("triesLabel").textContent = "ניסיונות: " + Math.max(0, MAX_ATTEMPTS - cur.attempts);
+
+  if(val === cur.answer){
+    locked = true;
+    cur.done = true;
+    cur.ms += elapsed;
+    cur.within3 = true;
+    if(cur.attempts === 1){ cur.firstTry = true; s.firstTry++; }
+    s.within3++;
+    s.q++;
+    db.answers++;
+    trackPattern(cur.pattern, { correct: true });
+    var cells = document.querySelectorAll(".ans-cell");
+    for(var i = 0; i < cells.length; i++) cells[i].classList.add("ok");
+    var praise = ["מדויק!","נכון מאוד!","כל הכבוד!","יפה!","אלופה!","בדיוק!"];
+    document.getElementById("msg").className = "msg ok";
+    document.getElementById("msg").textContent = praise[Math.floor(Math.random() * praise.length)];
+    save({ immediate: true });
+    updateStats();
+    setTimeout(function(){ advanceAfterProblem(); }, 750);
+    return;
+  }
+
+  /* wrong */
+  var wrongCols = compareColumns(val);
+  markWrongCols(wrongCols);
+
+  if(cur.attempts < MAX_ATTEMPTS){
+    document.getElementById("msg").className = "msg no";
+    if(wrongCols.length && wrongCols.length <= 3){
+      document.getElementById("msg").innerHTML = "לא מדויק — בדקי את העמודות המסומנות<small>נסי שוב · בלי לחשוף את התשובה</small>";
+    } else {
+      document.getElementById("msg").innerHTML = "לא מדויק — נסי שוב<small>שימי לב להלוואות מימין לשמאל</small>";
+    }
+    save();
+    /* clear for retry but keep focus on rightmost wrong or ones */
+    setTimeout(function(){
+      for(var i = 0; i < ansDigits.length; i++) ansDigits[i] = "";
+      activeCol = wrongCols.length ? wrongCols[wrongCols.length - 1] : ansDigits.length - 1;
+      renderBoard();
+    }, 600);
+    return;
+  }
+
+  /* 3rd wrong — guided walkthrough then reveal */
+  locked = true;
+  cur.ms += elapsed;
+  cur.guided = true;
+  cur.done = true;
+  s.guided++;
+  s.q++;
+  db.answers++;
+  trackPattern(cur.pattern, { wrong: true, guided: true });
+  document.getElementById("msg").className = "msg info";
+  document.getElementById("msg").textContent = "בואי נפתור יחד, לאט לאט…";
+  save({ immediate: true });
+  updateStats();
+  openGuide(cur.minuend, cur.subtrahend, function(){
+    revealAnswerThenAdvance();
+  });
+}
+
+function revealAnswerThenAdvance(){
+  var w = ansDigits.length;
+  var digs = digitsOf(cur.answer, w);
+  var lead = w - String(cur.answer).length;
+  for(var i = 0; i < w; i++){
+    ansDigits[i] = (i < lead) ? "" : digs[i];
+  }
+  renderBoard();
+  var cells = document.querySelectorAll(".ans-cell");
+  for(var c = 0; c < cells.length; c++) cells[c].classList.add("ok");
+  document.getElementById("msg").className = "msg ok";
+  document.getElementById("msg").innerHTML = "התשובה הנכונה: <span dir=\"ltr\">" + cur.answer + "</span><small>הקישי להמשך</small>";
+  var cont = function(){
+    document.removeEventListener("click", cont);
+    document.getElementById("pad").removeEventListener("click", contPad);
+    advanceAfterProblem();
+  };
+  var contPad = function(e){ e.stopPropagation(); cont(); };
+  setTimeout(function(){
+    document.addEventListener("click", cont);
+    document.getElementById("pad").addEventListener("click", contPad);
+  }, 400);
+}
+
+function advanceAfterProblem(){
+  if(curIdx + 1 >= SESSION_SIZE){
+    finishSession();
+  } else {
+    loadProblem(curIdx + 1);
+  }
+}
+
+function finishSession(){
+  var s = db.activeSession;
+  if(!s) return;
+  touchSession();
+  s.finished = true;
+  s.q = SESSION_SIZE;
+  /* compute aggregates if needed */
+  var first = 0, within = 0, guided = 0, ms = s.ms;
+  for(var i = 0; i < s.problems.length; i++){
+    var p = s.problems[i];
+    if(p.firstTry) first++;
+    if(p.within3) within++;
+    if(p.guided) guided++;
+    ms += p.ms;
+  }
+  s.firstTry = first;
+  s.within3 = within;
+  s.guided = guided;
+  s.totalMs = ms;
+  /* archive into sessions history */
+  db.sessions.push({
+    start: s.start,
+    last: s.last,
+    ms: s.ms,
+    totalMs: ms,
+    q: SESSION_SIZE,
+    firstTry: first,
+    within3: within,
+    guided: guided,
+    patterns: summarizeSessionPatterns(s.problems)
+  });
+  db.activeSession = null;
+  save({ immediate: true });
+  renderSummary(db.sessions[db.sessions.length - 1]);
+  show("summary");
+}
+
+function summarizeSessionPatterns(problems){
+  var m = {};
+  for(var i = 0; i < problems.length; i++){
+    var p = problems[i];
+    if(!m[p.pattern]) m[p.pattern] = { n: 0, guided: 0, first: 0 };
+    m[p.pattern].n++;
+    if(p.guided) m[p.pattern].guided++;
+    if(p.firstTry) m[p.pattern].first++;
+  }
+  return m;
+}
+
+function renderSummary(s){
+  var h = "";
+  h += '<div class="summary-big">כל הכבוד!</div>';
+  h += "<p style=\"margin:0 0 8px;color:var(--muted);font-weight:600\">סיימת 20 תרגילי חיסור במאונך</p>";
+  h += '<div class="summary-grid">';
+  h += '<div class="chip"><b>' + s.firstTry + '</b><small>בפעם הראשונה</small></div>';
+  h += '<div class="chip"><b>' + s.within3 + '</b><small>תוך 3 ניסיונות</small></div>';
+  h += '<div class="chip"><b>' + s.guided + '</b><small>עם הדרכה</small></div>';
+  h += '<div class="chip"><b>' + fmtDur(s.ms) + '</b><small>משך</small></div>';
+  h += "</div>";
+  if(s.patterns){
+    var hard = [];
+    for(var k in s.patterns){
+      if(s.patterns[k].guided > 0) hard.push(patternLabel(k) + " · " + s.patterns[k].guided);
+    }
+    if(hard.length){
+      h += '<h3>מה היה מאתגר</h3><div class="hard">';
+      hard.forEach(function(x){ h += "<span>" + esc(x) + "</span>"; });
+      h += "</div>";
+    }
+  }
+  document.getElementById("summaryBody").innerHTML = h;
+}
+
+/* ---------------- borrow walkthrough builder ---------------- */
+function buildBorrowSteps(minuend, subtrahend){
+  var a0 = String(minuend);
+  var b0 = String(subtrahend);
+  var n = Math.max(a0.length, b0.length);
+  var a = a0;
+  var b = b0;
+  while(a.length < n) a = "0" + a;
+  while(b.length < n) b = "0" + b;
+  var work = [];
+  for(var i = 0; i < n; i++) work.push(a.charCodeAt(i) - 48);
+  var result = [];
+  for(var r = 0; r < n; r++) result.push(" ");
+  var steps = [];
+
+  function spaces(k){ var t = ""; while(k-- > 0) t += " "; return t; }
+  function board(hl){
+    var marks = [];
+    for(var i = 0; i < n; i++){
+      marks.push(work[i] !== (a.charCodeAt(i) - 48) ? String(work[i]) : " ");
+    }
+    /* show original with strikes conceptually in text */
+    var topMarks = marks.join(" ");
+    var top = work.map(function(d, idx){
+      return String(d);
+    }).join(" ");
+    var bot = b.split("").join(" ");
+    var line = Array(n * 2).join("─");
+    var res = result.join(" ");
+    var text = "  " + top + "\n− " + bot + "\n  " + line + "\n  " + res;
+    var html = esc(text);
+    if(hl != null && hl !== ""){
+      var h = esc(String(hl));
+      if(html.indexOf(h) >= 0) html = html.replace(h, '<span class="hl">' + h + "</span>");
+    }
+    return html;
+  }
+  function snap(narr, hl){
+    steps.push({ narr: narr, html: board(hl) });
+  }
+
+  var placeNames = ["יחידות", "עשרות", "מאות", "אלפים", "עשרות אלפים", "מאות אלפים"];
+  snap("כותבות את המספר הגדול למעלה ואת הקטן מתחתיו, ספרה מול ספרה. מתחילים מימין — מהיחידות.", String(work[n - 1]));
+
+  for(var col = n - 1; col >= 0; col--){
+    var place = placeNames[n - 1 - col] || ("עמודה " + (n - col));
+    var top = work[col];
+    var bot = b.charCodeAt(col) - 48;
+    var leadBlankBot = (col < n - b0.length);
+    if(leadBlankBot) bot = 0;
+
+    if(top < bot){
+      snap("בעמודת ה" + place + ": " + top + " קטן מ־" + bot + ". צריך להלוות משמאל.", String(top));
+      /* find donor */
+      var donor = col - 1;
+      while(donor >= 0 && work[donor] === 0){
+        snap("בעמודת " + (placeNames[n - 1 - donor] || "") + " יש 0 — אי אפשר להלוות ממנה. ממשיכים שמאלה ומסמנים הלוואה בשרשרת.", "0");
+        donor--;
+      }
+      if(donor < 0){
+        /* should not happen if minuend > subtrahend */
+        snap("משהו לא מסתדר — נבדוק שוב את המספרים.", "");
+        break;
+      }
+      work[donor] -= 1;
+      snap("לוקחות 1 מ־" + (placeNames[n - 1 - donor] || "שמאל") + " — נשאר שם " + work[donor] + ".", String(work[donor]));
+      var k = donor + 1;
+      while(k < col){
+        work[k] += 10;
+        work[k] -= 1; /* pass along */
+        snap("ה־0 קיבל 10, ומיד מלווה הלאה — נשאר 9.", "9");
+        k++;
+      }
+      work[col] += 10;
+      top = work[col];
+      snap("עכשיו ב" + place + " יש " + top + " (אחרי הלוואה).", String(top));
+    }
+
+    var dig = top - bot;
+    result[col] = String(dig);
+    snap("ב" + place + ": " + top + " − " + bot + " = " + dig + ". כותבות " + dig + " למטה.", String(dig));
+  }
+
+  var ans = minuend - subtrahend;
+  snap("סיימנו מימין לשמאל. התשובה: " + ans + ".", String(ans));
+  return { steps: steps, title: minuend + " − " + subtrahend + " = " + ans };
+}
+
+/* ---------------- demo / guide UI ---------------- */
+var demoTimer = null;
+var demoIdx = 0;
+var demoPaused = false;
+var demoSteps = [];
+var DEMO_STEP_MS = 2600;
+var guideOnDone = null;
+
+function demoClearTimer(){
+  if(demoTimer){ clearTimeout(demoTimer); demoTimer = null; }
+}
+function demoRenderStep(){
+  if(!demoSteps.length) return;
+  if(demoIdx < 0) demoIdx = 0;
+  if(demoIdx >= demoSteps.length) demoIdx = demoSteps.length - 1;
+  var s = demoSteps[demoIdx];
+  document.getElementById("demoNarr").textContent = s.narr;
+  document.getElementById("demoBoard").innerHTML = s.html;
+  var nextBtn = document.getElementById("btnDemoNext");
+  nextBtn.textContent = (demoIdx >= demoSteps.length - 1) ? "מההתחלה" : (demoPaused ? "המשך לאט" : "הבא לאט");
+}
+function demoSchedule(){
+  demoClearTimer();
+  if(demoPaused) return;
+  if(demoIdx >= demoSteps.length - 1) return;
+  demoTimer = setTimeout(function(){
+    demoTimer = null;
+    demoIdx++;
+    demoRenderStep();
+    demoSchedule();
+  }, DEMO_STEP_MS);
+}
+
+function openDemoOverlay(minuend, subtrahend, title, onDone){
+  var built = buildBorrowSteps(minuend, subtrahend);
+  demoSteps = built.steps;
+  demoIdx = 0;
+  demoPaused = false;
+  guideOnDone = onDone || null;
+  document.getElementById("demoTitle").textContent = title || "איך מחסירים במאונך";
+  document.getElementById("btnDemoPause").textContent = "השהי";
+  document.getElementById("demoNote").textContent = built.title + " · מימין לשמאל · עם הלוואות";
+  document.getElementById("demoOverlay").classList.remove("hidden");
+  demoRenderStep();
+  demoSchedule();
+}
+
+function closeDemo(){
+  demoClearTimer();
+  document.getElementById("demoOverlay").classList.add("hidden");
+  var cb = guideOnDone;
+  guideOnDone = null;
+  if(cb) cb();
+}
+
+function openGuide(minuend, subtrahend, onDone){
+  openDemoOverlay(minuend, subtrahend, "בואי נפתור יחד", onDone);
+}
+
+function pickDemoProblem(){
+  /* sample with borrowing across zero — classic worksheet style */
+  var samples = [
+    [50023, 4786],
+    [70040, 3568],
+    [60302, 4789],
+    [45000, 2783],
+    [81203, 9467]
+  ];
+  if(cur && cur.zeroBridge) return { m: cur.minuend, s: cur.subtrahend };
+  if(cur) return { m: cur.minuend, s: cur.subtrahend };
+  var p = samples[randInt(0, samples.length - 1)];
+  return { m: p[0], s: p[1] };
+}
+
+document.getElementById("btnDemo").addEventListener("click", function(e){
+  e.stopPropagation();
+  var p = pickDemoProblem();
+  openDemoOverlay(p.m, p.s, "הדגמה איטית", null);
+});
+document.getElementById("btnDemoClose").addEventListener("click", function(e){
+  e.stopPropagation();
+  closeDemo();
+});
+document.getElementById("demoOverlay").addEventListener("click", function(e){
+  if(e.target === this) closeDemo();
+});
+document.getElementById("btnDemoPause").addEventListener("click", function(e){
+  e.stopPropagation();
+  demoPaused = !demoPaused;
+  this.textContent = demoPaused ? "המשך" : "השהי";
+  if(demoPaused) demoClearTimer();
+  else demoSchedule();
+  demoRenderStep();
+});
+document.getElementById("btnDemoNext").addEventListener("click", function(e){
+  e.stopPropagation();
+  if(demoIdx >= demoSteps.length - 1){
+    demoIdx = 0;
+    demoPaused = false;
+    document.getElementById("btnDemoPause").textContent = "השהי";
+    demoRenderStep();
+    demoSchedule();
+    return;
+  }
+  demoPaused = true;
+  document.getElementById("btnDemoPause").textContent = "המשך";
+  demoClearTimer();
+  demoIdx++;
+  demoRenderStep();
+});
+
+/* ---------------- number pad ---------------- */
+var pad = document.getElementById("pad");
+["1","2","3","4","5","6","7","8","9","מחק","0","בדקי"].forEach(function(lab){
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = "key" + (lab === "בדקי" ? " go" : "") + (lab === "מחק" ? " del" : "");
+  b.textContent = lab;
+  b.addEventListener("click", function(){
+    if(locked) return;
+    if(lab === "מחק"){
+      if(ansDigits[activeCol] !== ""){
+        ansDigits[activeCol] = "";
+      } else if(activeCol < ansDigits.length - 1){
+        activeCol++;
+        ansDigits[activeCol] = "";
+      }
+      renderBoard();
+      return;
+    }
+    if(lab === "בדקי"){ submitAnswer(); return; }
+    ansDigits[activeCol] = lab;
+    /* move left (toward higher place) after entry — standard RTL fill of LTR columns */
+    if(activeCol > 0) activeCol--;
+    renderBoard();
+  });
+  pad.appendChild(b);
+});
+
+document.addEventListener("keydown", function(e){
+  if(document.getElementById("practice").classList.contains("hidden")) return;
+  if(locked) return;
+  if(/^[0-9]$/.test(e.key)){
+    ansDigits[activeCol] = e.key;
+    if(activeCol > 0) activeCol--;
+    renderBoard();
+  } else if(e.key === "Backspace"){
+    if(ansDigits[activeCol] !== "") ansDigits[activeCol] = "";
+    else if(activeCol < ansDigits.length - 1){ activeCol++; ansDigits[activeCol] = ""; }
+    renderBoard();
+  } else if(e.key === "Enter"){
+    submitAnswer();
+  } else if(e.key === "ArrowLeft"){
+    if(activeCol > 0){ activeCol--; renderBoard(); }
+  } else if(e.key === "ArrowRight"){
+    if(activeCol < ansDigits.length - 1){ activeCol++; renderBoard(); }
+  }
+});
+
+/* ---------------- WhatsApp report ---------------- */
+function reportText(){
+  var s = db.sessions.length ? db.sessions[db.sessions.length - 1] : null;
+  if(!s || !s.q) return null;
+  var lines = [];
+  lines.push("דוח תרגול חיסור במאונך — אמיליה");
+  lines.push(fmtDate(s.start) + " בשעה " + fmtTime(s.start));
+  lines.push("זמן תרגול: " + fmtDur(s.ms));
+  lines.push("תרגילים: " + s.q + " (ישיבה מלאה)");
+  lines.push("בפעם הראשונה: " + s.firstTry);
+  lines.push("תוך 3 ניסיונות: " + s.within3);
+  lines.push("נעזרו בהדרכה: " + s.guided);
+  if(s.patterns){
+    var hard = [];
+    for(var k in s.patterns){
+      if(s.patterns[k].guided > 0 || (s.patterns[k].n - s.patterns[k].first) > 0){
+        hard.push(patternLabel(k));
+      }
+    }
+    if(hard.length){
+      lines.push("");
+      lines.push("דפוסים מאתגרים:");
+      hard.forEach(function(x){ lines.push("• " + x); });
+    }
+  }
+  return lines.join("\n");
+}
+function sendReport(){
+  var t = reportText();
+  if(!t){
+    alert("אין עדיין ישיבה שהסתיימה");
+    return;
+  }
+  window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank");
+}
+function copyReport(){
+  var t = reportText();
+  if(!t){ alert("אין עדיין ישיבה שהסתיימה"); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){
+      alert("הדוח הועתק — אפשר להדביק בוואטסאפ");
+    }, function(){ window.prompt("העתיקי את הדוח:", t); });
+  } else {
+    window.prompt("העתיקי את הדוח:", t);
+  }
+}
+document.getElementById("btnReport").addEventListener("click", sendReport);
+document.getElementById("btnCopy").addEventListener("click", copyReport);
+document.getElementById("btnNewSession").addEventListener("click", function(){
+  startNewSession();
+});
+
+/* ---------------- screens / parent ---------------- */
+var scr = {
+  practice: document.getElementById("practice"),
+  summary: document.getElementById("summary"),
+  pin: document.getElementById("pinScreen"),
+  parent: document.getElementById("parent")
+};
+function show(name){
+  for(var k in scr) scr[k].classList.add("hidden");
+  scr[name].classList.remove("hidden");
+}
+
+document.getElementById("btnParent").addEventListener("click", function(){
+  document.getElementById("pinInput").value = "";
+  document.getElementById("pinNote").textContent = "ארבע ספרות";
+  show("pin");
+  setTimeout(function(){ document.getElementById("pinInput").focus(); }, 60);
+});
+document.getElementById("btnPinBack").addEventListener("click", function(){
+  if(db.activeSession && !db.activeSession.finished) show("practice");
+  else if(db.sessions.length && !db.activeSession) show("summary");
+  else show("practice");
+});
+document.getElementById("pinInput").addEventListener("input", function(e){
+  var v = e.target.value.replace(/\D/g, "").slice(0, 4);
+  e.target.value = v;
+  if(v.length === 4){
+    if(v === PIN){
+      cloudPull().then(function(){
+        buildParent();
+        show("parent");
+        save({ immediate: true });
+      });
+    } else {
+      document.getElementById("pinNote").textContent = "קוד לא נכון";
+      e.target.value = "";
+    }
+  }
+});
+document.getElementById("btnBack").addEventListener("click", function(){
+  if(db.activeSession && !db.activeSession.finished) show("practice");
+  else show("practice");
+});
+document.getElementById("btnReset").addEventListener("click", function(){
+  if(window.confirm("לאפס את כל נתוני החיסור של אמיליה? אין דרך לשחזר.")){
+    db = blank();
+    save({ immediate: true });
+    buildParent();
+    startNewSession();
+  }
+});
+
+function hardestPatterns(n){
+  var arr = [];
+  for(var k in db.patterns){
+    var f = db.patterns[k];
+    if(!f.seen) continue;
+    var score = (f.wrong || 0) * 2 + (f.guided || 0) * 3;
+    if(score > 0) arr.push({ k: k, score: score, wrong: f.wrong || 0, guided: f.guided || 0, seen: f.seen });
+  }
+  arr.sort(function(a, b){ return b.score - a.score; });
+  return arr.slice(0, n);
+}
+
+function buildParent(){
+  var host = document.getElementById("parentBody");
+  var real = db.sessions.filter(function(s){ return s.q > 0; });
+  var syncNote = cloudConfigured()
+    ? '<div class="note">סנכרון ענן: פעיל · מזהה ' + esc(CLOUD.rowId) + "</div>"
+    : '<div class="note">סנכרון ענן: כבוי</div>';
+
+  if(!real.length){
+    host.innerHTML = '<div class="panel"><div class="empty">עדיין אין ישימות תרגול.<br>אחרי שאמיליה תסיים 20 תרגילים, יופיעו כאן תאריך, משך, הצלחות והדרכות.</div></div>' + syncNote;
+    return;
+  }
+
+  var tq = 0, tf = 0, tw = 0, tg = 0, tms = 0;
+  real.forEach(function(s){
+    tq += s.q; tf += s.firstTry || 0; tw += s.within3 || 0; tg += s.guided || 0; tms += s.ms || 0;
+  });
+
+  var h = '<div class="panel">';
+  h += "<h2>סך הכול</h2><table>";
+  h += "<tr><th>ישיבות</th><td>" + real.length + "</td></tr>";
+  h += "<tr><th>תרגילים</th><td>" + tq + "</td></tr>";
+  h += "<tr><th>בפעם הראשונה</th><td>" + tf + " (" + Math.round(100 * tf / tq) + "%)</td></tr>";
+  h += "<tr><th>תוך 3 ניסיונות</th><td>" + tw + " (" + Math.round(100 * tw / tq) + "%)</td></tr>";
+  h += "<tr><th>הדרכה</th><td>" + tg + "</td></tr>";
+  h += "<tr><th>זמן מצטבר</th><td>" + fmtDur(tms) + "</td></tr>";
+  h += "</table>" + syncNote + "</div>";
+
+  h += '<h3>ישיבות</h3><div class="panel"><table>';
+  h += "<tr><th>תאריך</th><th>משך</th><th>ראשון</th><th>תוך 3</th><th>הדרכה</th></tr>";
+  real.slice().reverse().slice(0, 25).forEach(function(s){
+    h += "<tr><td>" + fmtDate(s.start) + "</td><td>" + fmtDur(s.ms) +
+         "</td><td>" + s.firstTry + "/" + s.q +
+         "</td><td>" + s.within3 +
+         "</td><td>" + s.guided + "</td></tr>";
+  });
+  h += "</table></div>";
+
+  var hard = hardestPatterns(8);
+  h += '<h3>דפוסים קשים</h3><div class="panel">';
+  if(hard.length){
+    h += '<div class="hard">';
+    hard.forEach(function(x){
+      h += "<span>" + esc(patternLabel(x.k)) + " · " + x.guided + " הדרכות</span>";
+    });
+    h += "</div>";
+  } else {
+    h += '<div class="empty">עדיין אין דפוסים קשים במיוחד.</div>';
+  }
+  h += "</div>";
+
+  host.innerHTML = h;
+}
+
+/* ---------------- go ---------------- */
+syncEl = document.getElementById("syncStatus");
+cloudPull().then(function(){
+  resumeOrStart();
+});
+</script>
+
+
+</body></html>
