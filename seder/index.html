@@ -99,9 +99,9 @@ input.pin{width:100%;font-size:28px;text-align:center;padding:10px;border-radius
 <div class="modal hidden" id="mHow"><div class="card"><h3 style="margin-top:0">ככה פותרים</h3><ol class="rules" id="rulesList2"></ol>
 <div class="muted">דוגמה (תרגיל אחר):</div><div class="board" id="howBoard"></div><button class="btn" id="bHowClose">הבנתי, חוזרת לתרגיל</button></div></div>
 
-<script src="engine.js?v=2026-10-19d"></script>
+<script src="engine.js?v=2026-10-19e"></script>
 <script>
-var APPVER="2026-10-19d",KEY="seder_emilia_v1",PIN="2604";
+var APPVER="2026-10-19e",KEY="seder_emilia_v1",PIN="2604";
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{hist:[],last:[]};}catch(e){return {hist:[],last:[]};}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}}
 function toks(str){return String(str).trim().split(/\s+/).filter(Boolean).map(function(t){return '<span class="tk">'+t+'</span>';}).join("");}
@@ -177,7 +177,7 @@ function waMsg(r){var L=String.fromCharCode(0x2066),P=String.fromCharCode(0x2069
  if(encodeURIComponent(msg).length>6000||msg.length>1800){var ty={};Object.keys(st).forEach(function(k){var o=st[k];ty[k]=[o.n,o.ok,o.tries,o.ms,o.help];});
   msg=body+"\n\n#SEDER v1 "+JSON.stringify({v:1,d:r.date,n:N,t:ty});}
  return msg;}
-function waUrl(r){return "https://wa.me/?text="+encodeURIComponent(waMsg(r)).replace(/'/g,"%27");}
+function waUrl(r){return "https://wa.me/972528995094?text="+encodeURIComponent(waMsg(r)).replace(/'/g,"%27");}
 function report(){return db.hist[0]?waMsg(db.hist[0]):"";}
 $("bReport").onclick=function(){if(db.hist[0])window.open(waUrl(db.hist[0]),"_blank");};
 $("bStart").onclick=start;$("bAgain").onclick=start;
