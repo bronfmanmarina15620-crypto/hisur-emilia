@@ -86,6 +86,17 @@ function toks(str){return String(str).trim().split(/\s+/).filter(Boolean).map(fu
 function X(str,hl){str=splitParens(str);if(hl)hl=splitParens(hl).trim().replace(/\s+/g," ");str=str.replace(/\s+/g," ");var inner;if(hl&&String(str).indexOf(hl)>=0){var i=str.indexOf(hl);inner=toks(str.slice(0,i))+'<span class="tk hl ex">'+toks(hl)+'</span>'+toks(str.slice(i+hl.length));}else inner=toks(str);
  return '<span class="ex" dir="ltr">'+inner+'</span>';}
 function splitParens(str){return String(str).replace(/\(/g,"( ").replace(/\)/g," )").replace(/__/g," __ ");}
+
+var CLOUD={url:"https://nrxhjzmmmzqjytmdgzjg.supabase.co",key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yeGhqem1tbXpxanl0bWRnempnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDg3MTAsImV4cCI6MjEwNDEyNDcxMH0.5KYX69e1AyXqtHHRejFarK-r1yoXdmlpav2Oazb2WIs",row:"emilia-seder"};
+function ch(){return {"apikey":CLOUD.key,"Authorization":"Bearer "+CLOUD.key,"Content-Type":"application/json"};}
+function merge(a,b){var m={};(a.hist||[]).concat(b.hist||[]).forEach(function(r){if(r&&r.id)m[r.id]=r;});
+ var h=Object.keys(m).map(function(k){return m[k];}).sort(function(x,y){return x.date<y.date?1:-1;}).slice(0,120);return {hist:h,last:a.last&&a.last.length?a.last:(b.last||[])};}
+function cloudSync(){try{
+ return fetch(CLOUD.url+"/rest/v1/kefel_state?id=eq."+CLOUD.row+"&select=data",{headers:ch()}).then(function(r){if(!r.ok)throw 0;return r.json();})
+ .then(function(rows){var c=rows&&rows[0]&&rows[0].data||{};if(typeof c==="string")c=JSON.parse(c);db=merge(db,c);save();
+  var h=ch();h.Prefer="resolution=merge-duplicates,return=minimal";
+  return fetch(CLOUD.url+"/rest/v1/kefel_state?on_conflict=id",{method:"POST",headers:h,body:JSON.stringify({id:CLOUD.row,data:db,updated_at:new Date().toISOString()})});})
+ .then(function(r){window.__sync=r&&r.ok?"ok":"fail";}).catch(function(){window.__sync="offline";});}catch(e){window.__sync="offline";}}
 var db=load(),S=Seder,$=function(i){return document.getElementById(i);};
 var RULES=["קודם מה שבתוך <b>הסוגריים</b>.","אחר כך <b>כפל ×</b> ו<b>חילוק :</b>","בסוף <b>חיבור +</b> ו<b>חיסור −</b>","פעולות מאותה דרגה — <b>משמאל לימין</b>, לפי הסדר."];
 $("rulesList").innerHTML=$("rulesList2").innerHTML=RULES.map(function(r){return "<li>"+r+"</li>";}).join("");
@@ -119,7 +130,7 @@ $("pad").innerHTML=keys.map(function(k){return '<button class="key'+(k==="⌫"?"
  if(k==="⌫")input=input.slice(0,-1);else if(k==="בדיקה"){if(input)check(+input);return;}else if(input.length<7)input+=k;
  $("qAns").textContent=input?(+input).toLocaleString("en-US"):"";$("qMsg").textContent="";};});
 function end(){var n=ses.length,rec={id:Date.now().toString(36),date:new Date().toISOString(),items:ses.map(function(q){return {type:q.type,expr:q.display,correct:q.type===7?q.correct:q.ans,expected_input:q.ans,entries:q.entries||[],tries:q.tries||0,ms_to_correct:q.ms_to_correct||null,total_ms:q.total_ms||0,outcome:q.outcome||"skipped"};}),n:n,ok:stat.ok,first:stat.first,miss:stat.typeMiss,help:stat.help.map(function(i){var q=ses[i];return {type:q.type,display:q.display,ans:q.type===7?q.correct:q.ans,bad:q.type===7?q.ans:null,wrong:q.wrong||null,steps:q.steps.map(function(s){return S.show(s.expr);})};})};
- db.hist.unshift(rec);db.hist=db.hist.slice(0,120);save();show("vEnd");
+ db.hist.unshift(rec);db.hist=db.hist.slice(0,120);save();cloudSync();show("vEnd");
  $("endStats").innerHTML="פתרת נכון <b>"+stat.ok+" מתוך "+n+"</b>, ומתוכם <b>"+stat.first+"</b> כבר בפעם הראשונה.";
  var h=$("endHelp");if(rec.help.length){h.classList.remove("hidden");h.innerHTML="<h3 style='margin-top:0'>תרגילים שנעבור עליהם יחד</h3><div class='list'>"+rec.help.map(function(x){return "<div style='font-size:20px;font-weight:700'>"+X(x.display.replace(/ =$/,""))+"</div>";}).join("")+"</div>";}else h.classList.add("hidden");}
 function report(){var r=db.hist[0];if(!r)return"";var t="דוח סדר פעולות – אמיליה\n"+new Date(r.date).toLocaleDateString("he-IL")+"\nנכונים: "+r.ok+"/"+r.n+" (בפעם הראשונה: "+r.first+")";
@@ -147,4 +158,5 @@ function renderParent(){var b=$("parentBody");if(!db.hist.length){b.innerHTML="<
   var help=r.help.map(function(x){var sol=x.type===7?"<div class='muted'>הפתרון השגוי שהוצג:</div><div class='board'>"+x.wrong.map(function(s,i){return "<div>"+(i+1)+") "+X("= "+s)+"</div>";}).join("")+"</div><div>הטעות: שלב "+x.bad+". הפתרון הנכון:</div>":"";
    return "<div style='margin:8px 0'><div style='font-weight:800;font-size:18px'>"+X(splitParens(x.display).replace("__","["+S.fmt(x.ans)+"]")+(x.type===7||x.type===6?"":" "+S.fmt(x.ans)))+"</div>"+sol+"<div class='board'>"+x.steps.map(function(s){return "<div>"+X("= "+s)+"</div>";}).join("")+"</div></div>";}).join("");
   return "<div style='border-bottom:1px solid var(--line);padding:10px 0'><b>"+d.toLocaleDateString("he-IL")+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+"</b> · "+r.ok+"/"+r.n+" · בפעם הראשונה "+r.first+"<div class='hard'>"+hard+"</div>"+(help?"<div style='margin-top:6px'><b>צריכה עזרה ב:</b>"+help+"</div>":"")+"</div>";}).join("");}
+cloudSync();
 </script></body></html>
