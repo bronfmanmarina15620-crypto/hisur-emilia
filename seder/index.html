@@ -1,0 +1,145 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>סדר פעולות חשבון · אמיליה</title>
+<style>
+:root{--bg:#fdf7f2;--card:#fff;--ink:#33303c;--muted:#8a8496;--pink:#ff7aa8;--pink-d:#e85f8e;--mint:#2fbf9b;--sky:#5aa9f7;--sun:#ffc75a;--bad:#ef5f6b;--line:#efe7e0;--violet:#8b7cf6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:linear-gradient(180deg,#fff0f5 0%,var(--bg) 45%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Rubik,Arial,sans-serif;text-align:right}
+.wrap{max-width:440px;margin:0 auto;padding:14px 14px 30px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hello{font-size:19px;font-weight:800}.hello span{color:var(--pink-d)}
+.ghost{background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:7px 12px;font-size:13px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:0 6px 20px rgba(200,150,170,.12);margin-bottom:12px}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.expr{direction:ltr;text-align:center;font-size:30px;font-weight:800;letter-spacing:.5px;margin:10px 0 6px;white-space:nowrap;overflow-x:auto}
+.expr.long{font-size:23px}
+.badge{display:inline-block;background:#f2efff;color:var(--violet);border-radius:10px;padding:3px 9px;font-size:12px;font-weight:700}
+.ans{min-height:58px;border:2px dashed var(--line);border-radius:16px;font-size:32px;font-weight:800;text-align:center;direction:ltr;padding:6px;background:#fffdfa}
+.msg{min-height:26px;text-align:center;font-weight:700;margin:8px 0;font-size:16px}
+.msg.ok{color:var(--mint)}.msg.try{color:#c27a00}.msg.help{color:var(--pink-d)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;direction:ltr}
+.key{padding:15px 0;font-size:24px;font-weight:800;background:#fff;border:1px solid var(--line);border-radius:16px;color:var(--ink)}
+.key:active{background:#f7f2ee}.key.go{background:var(--mint);border-color:var(--mint);color:#fff;font-size:18px}.key.del{background:#fff2f5;color:var(--pink-d);font-size:20px}
+.stats{display:flex;gap:8px;margin-bottom:10px}.chip{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:7px;text-align:center}.chip b{display:block;font-size:17px}.chip small{color:var(--muted);font-size:11px}
+.btn{width:100%;padding:13px;border-radius:16px;border:none;background:var(--mint);color:#fff;font-size:17px;font-weight:800;margin-top:8px}
+.btn.pink{background:var(--pink)}.btn.light{background:#fff;border:1px dashed #f5c0d4;color:var(--pink-d);font-size:14px;padding:9px}
+.rules li{margin:8px 0;font-size:16px;line-height:1.5}
+.wsteps{list-style:none;padding:0;margin:8px 0}
+.wsteps button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 12px;margin:6px 0;border:2px solid var(--line);border-radius:14px;background:#fff;font-size:15px;font-weight:700;color:var(--ink)}
+.wsteps button .ltr{font-size:20px}.wsteps button.sel{border-color:var(--sun);background:#fff8e6}
+.board{direction:ltr;text-align:left;background:#f7f2ee;border-radius:14px;padding:10px 12px;font-size:19px;line-height:1.8;font-weight:700}
+.board .hl{background:#ffe08a;border-radius:4px;padding:0 3px}
+.hidden{display:none!important}
+.list div{border-bottom:1px solid var(--line);padding:8px 0}
+.hard span{display:inline-block;background:#fdeef0;color:#a3262f;border-radius:10px;padding:4px 8px;font-size:12px;font-weight:700;margin:2px}
+.modal{position:fixed;inset:0;background:rgba(40,30,40,.45);display:flex;align-items:flex-end;justify-content:center;z-index:9}
+.modal .card{width:100%;max-width:440px;margin:0;max-height:88vh;overflow:auto;border-radius:22px 22px 0 0}
+input.pin{width:100%;font-size:28px;text-align:center;padding:10px;border-radius:14px;border:1px solid var(--line);direction:ltr}
+.muted{color:var(--muted);font-size:13px}
+</style></head><body><div class="wrap">
+<div class="top"><div class="hello">סדר פעולות של <span>אמיליה</span></div>
+<div><a class="ghost" href="../" style="text-decoration:none">חיסור</a> <button class="ghost" id="bParent">הורים</button></div></div>
+
+<div id="vStart">
+ <div class="card"><h2 style="margin:0 0 4px">הכנה לבוחן 💪</h2>
+ <div class="muted">ככה פותרים, לפי הסדר:</div>
+ <ol class="rules" id="rulesList"></ol></div>
+ <button class="btn" id="bStart">יאללה, מתחילות! · 20 תרגילים</button>
+</div>
+
+<div id="vPlay" class="hidden">
+ <div class="stats"><div class="chip"><b id="sCount">1/20</b><small>תרגיל</small></div><div class="chip"><b id="sFirst">0</b><small>בפעם הראשונה</small></div><div class="chip"><b id="sOk">0</b><small>נכונים</small></div></div>
+ <div class="card">
+  <span class="badge" id="qType"></span>
+  <div id="qPrompt" class="muted" style="margin-top:6px"></div>
+  <div class="expr" id="qExpr"></div>
+  <ul class="wsteps hidden" id="qWrong"></ul>
+  <div class="ans" id="qAns"></div>
+  <div class="msg" id="qMsg"></div>
+  <div class="pad" id="pad"></div>
+  <button class="btn hidden" id="bNext">לתרגיל הבא ←</button>
+ </div>
+ <button class="btn light" id="bHow">תראי איך · כללים ודוגמה</button>
+</div>
+
+<div id="vEnd" class="hidden">
+ <div class="card"><h2 style="margin:0">כל הכבוד, סיימת! 🎉</h2><div id="endStats" style="font-size:17px;margin-top:8px"></div></div>
+ <div class="card" id="endHelp"></div>
+ <button class="btn pink" id="bReport">שלחי דוח לאמא בוואטסאפ</button>
+ <button class="btn" id="bAgain">סדרה חדשה · 20 תרגילים</button>
+</div>
+
+<div id="vPin" class="hidden"><div class="card"><h3 style="margin-top:0">מסך הורים</h3><input class="pin" id="pin" type="password" inputmode="numeric" placeholder="קוד"><button class="btn" id="bPinOk">כניסה</button><button class="btn light" id="bPinBack">חזרה</button></div></div>
+<div id="vParent" class="hidden"><div class="card"><div id="parentBody"></div></div><button class="btn light" id="bParentBack">חזרה לתרגול</button></div>
+</div>
+
+<div class="modal hidden" id="mHow"><div class="card"><h3 style="margin-top:0">ככה פותרים</h3><ol class="rules" id="rulesList2"></ol>
+<div class="muted">דוגמה (תרגיל אחר):</div><div class="board" id="howBoard"></div><button class="btn" id="bHowClose">הבנתי, חוזרת לתרגיל</button></div></div>
+
+<script src="engine.js"></script>
+<script>
+var KEY="seder_emilia_v1",PIN="2604";
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{hist:[],last:[]};}catch(e){return {hist:[],last:[]};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}}
+var db=load(),S=Seder,$=function(i){return document.getElementById(i);};
+var RULES=["קודם מה שבתוך <b>הסוגריים</b>.","אחר כך <b>כפל ×</b> ו<b>חילוק :</b>","בסוף <b>חיבור +</b> ו<b>חיסור −</b>","פעולות מאותה דרגה — <b>משמאל לימין</b>, לפי הסדר."];
+$("rulesList").innerHTML=$("rulesList2").innerHTML=RULES.map(function(r){return "<li>"+r+"</li>";}).join("");
+function show(id){["vStart","vPlay","vEnd","vPin","vParent"].forEach(function(v){$(v).classList.toggle("hidden",v!==id);});}
+var ses,idx,tries,input,stat,sel,done;
+var ENC=["כמעט! נסי שוב 💛","את בכיוון, עוד ניסיון אחד!"];
+var HINT=["זכרי: כפל וחילוק לפני חיבור וחיסור.","זכרי: קודם מה שבסוגריים.","בדקי כל שלב בעיניים, לאט לאט."];
+var PROMPT={6:"איזה מספר חסר? הקלידי אותו:",7:"מישהו פתר — אבל באחד השלבים יש טעות. באיזה שלב?"};
+function typeStats(){var st={};db.hist.slice(0,10).forEach(function(r){(r.items||[]).forEach(function(it){var o=st[it.type]=st[it.type]||{n:0,tries:0,ms:0,help:0,first:0};o.n++;o.tries+=it.tries;o.ms+=it.total_ms;if(it.outcome==="needs_help")o.help++;if(it.outcome==="correct_first")o.first++;});});return st;}
+function start(){ses=S.session(db.last,typeStats());db.last=ses.map(function(x){return x.key;});save();idx=0;stat={first:0,ok:0,help:[],typeMiss:{}};show("vPlay");render();}
+function render(){var q=ses[idx];q.t0=Date.now();q.entries=[];tries=0;input="";sel=null;done=false;
+ $("sCount").textContent=(idx+1)+"/"+ses.length;$("sFirst").textContent=stat.first;$("sOk").textContent=stat.ok;
+ $("qType").textContent=S.LABELS[q.type];$("qPrompt").textContent=PROMPT[q.type]||"כמה יוצא?";
+ var e=$("qExpr");e.innerHTML=q.display.replace("__",'<span style="color:var(--pink-d)">__</span>');e.classList.toggle("long",q.display.length>22);
+ $("qMsg").textContent="";$("qMsg").className="msg";$("bNext").classList.add("hidden");
+ var w=$("qWrong");if(q.type===7){w.classList.remove("hidden");$("qAns").classList.add("hidden");$("pad").classList.add("hidden");
+  w.innerHTML=q.wrong.map(function(s,i){return '<li><button data-i="'+(i+1)+'"><span>שלב '+(i+1)+'</span><span class="ltr">= '+s+'</span></button></li>';}).join("");
+  [].forEach.call(w.querySelectorAll("button"),function(b){b.onclick=function(){if(done)return;check(+b.dataset.i,b);};});}
+ else{w.classList.add("hidden");$("qAns").classList.remove("hidden");$("pad").classList.remove("hidden");}
+ $("qAns").textContent="";}
+function check(v,btn){var q=ses[idx];if(done)return;tries++;q.entries.push(v);q.tries=tries;q.total_ms=Date.now()-q.t0;
+ if(v===q.ans){done=true;q.ms_to_correct=q.total_ms;q.outcome=tries===1?"correct_first":"correct_after_retries";stat.ok++;if(tries===1)stat.first++;$("qMsg").textContent=tries===1?"מעולה! בדיוק ככה 🌟":"יפה מאוד, הצלחת! 👏";$("qMsg").className="msg ok";if(btn)btn.style.borderColor="var(--mint)";finish();return;}
+ stat.typeMiss[q.type]=(stat.typeMiss[q.type]||0)+1;
+ if(tries<3){$("qMsg").textContent=ENC[tries-1]+" "+(q.type===7?"נסי שלב אחר.":HINT[(q.type===3||q.type===6)?1:tries===2?2:0]);$("qMsg").className="msg try";input="";$("qAns").textContent="";if(btn)btn.classList.add("sel");return;}
+ done=true;q.outcome="needs_help";stat.help.push(idx);$("qMsg").textContent="בואי נבקש עזרה: פני לאמא, לאבא או למורה שיסבירו לך את התרגיל 💗";$("qMsg").className="msg help";$("qAns").textContent="";finish();}
+function finish(){$("bNext").classList.remove("hidden");$("sFirst").textContent=stat.first;$("sOk").textContent=stat.ok;}
+$("bNext").onclick=function(){idx++;if(idx>=ses.length)end();else render();};
+var keys=["1","2","3","4","5","6","7","8","9","⌫","0","בדיקה"];
+$("pad").innerHTML=keys.map(function(k){return '<button class="key'+(k==="⌫"?" del":k==="בדיקה"?" go":"")+'" data-k="'+k+'">'+k+"</button>";}).join("");
+[].forEach.call($("pad").querySelectorAll(".key"),function(b){b.onclick=function(){if(done)return;var k=b.dataset.k;
+ if(k==="⌫")input=input.slice(0,-1);else if(k==="בדיקה"){if(input)check(+input);return;}else if(input.length<7)input+=k;
+ $("qAns").textContent=input?(+input).toLocaleString("en-US"):"";$("qMsg").textContent="";};});
+function end(){var n=ses.length,rec={id:Date.now().toString(36),date:new Date().toISOString(),items:ses.map(function(q){return {type:q.type,expr:q.display,correct:q.type===7?q.correct:q.ans,expected_input:q.ans,entries:q.entries||[],tries:q.tries||0,ms_to_correct:q.ms_to_correct||null,total_ms:q.total_ms||0,outcome:q.outcome||"skipped"};}),n:n,ok:stat.ok,first:stat.first,miss:stat.typeMiss,help:stat.help.map(function(i){var q=ses[i];return {type:q.type,display:q.display,ans:q.type===7?q.correct:q.ans,bad:q.type===7?q.ans:null,wrong:q.wrong||null,steps:q.steps.map(function(s){return S.show(s.expr);})};})};
+ db.hist.unshift(rec);db.hist=db.hist.slice(0,120);save();show("vEnd");
+ $("endStats").innerHTML="פתרת נכון <b>"+stat.ok+" מתוך "+n+"</b>, ומתוכם <b>"+stat.first+"</b> כבר בפעם הראשונה.";
+ var h=$("endHelp");if(rec.help.length){h.classList.remove("hidden");h.innerHTML="<h3 style='margin-top:0'>תרגילים שנעבור עליהם יחד</h3><div class='list'>"+rec.help.map(function(x){return "<div><span class='ltr' style='font-size:20px;font-weight:700'>"+x.display.replace(/ =$/,"")+"</span></div>";}).join("")+"</div>";}else h.classList.add("hidden");}
+function report(){var r=db.hist[0];if(!r)return"";var t="דוח סדר פעולות – אמיליה\n"+new Date(r.date).toLocaleDateString("he-IL")+"\nנכונים: "+r.ok+"/"+r.n+" (בפעם הראשונה: "+r.first+")";
+ if(r.help.length)t+="\nתרגילים לעבור יחד:\n"+r.help.map(function(x){return "\u202A"+x.display.replace(/ =$/,"")+" = "+(x.type===7?"טעות בשלב "+x.bad:S.fmt(x.ans))+"\u202C";}).join("\n");return t;}
+$("bReport").onclick=function(){window.open("https://wa.me/?text="+encodeURIComponent(report()),"_blank");};
+$("bStart").onclick=start;$("bAgain").onclick=start;
+// how-to: worked example from teacher pool, never the current item
+$("bHow").onclick=function(){var cur=ses&&ses[idx]?ses[idx].key:"";var pool=S.TEACHER.filter(function(e){return e!==cur;});var e=pool[Math.floor(Math.random()*pool.length)];
+ var t=S.tok(e),r=S.solve(t),lines=[S.show(t)],c=t;r.steps.forEach(function(s){lines.push(S.show(s.expr));});
+ // highlight the op done at each step
+ var html="",prev=S.show(t);r.steps.forEach(function(s,i){var op=S.show([s.a,s.o,s.b]);html+=(i?"= ":"")+prev.replace(op,"<span class='hl'>"+op+"</span>")+"<br>";prev=S.show(s.expr);});html+="= <b>"+prev+"</b>";
+ $("howBoard").innerHTML=html;$("mHow").classList.remove("hidden");};
+$("bHowClose").onclick=function(){$("mHow").classList.add("hidden");};
+var back="vStart";
+$("bParent").onclick=function(){back=["vStart","vPlay","vEnd"].filter(function(v){return !$(v).classList.contains("hidden");})[0]||"vStart";$("pin").value="";show("vPin");};
+$("bPinBack").onclick=function(){show(back);};$("bParentBack").onclick=function(){show(back);};
+$("bPinOk").onclick=function(){if($("pin").value!==PIN){$("pin").value="";return;}renderParent();show("vParent");};
+function rankHtml(){var st=typeStats(),ks=Object.keys(st);if(!ks.length)return"";
+ var sc=function(k){var o=st[k];return (o.tries/o.n-1)*1.5+o.help/o.n*3+(o.ms/o.n)/30000;};ks.sort(function(a,b){return sc(b)-sc(a);});
+ var rows=ks.map(function(k){var o=st[k];return "<tr><td>"+S.LABELS[k]+"</td><td>"+(o.tries/o.n).toFixed(1)+"</td><td>"+Math.round(o.ms/o.n/1000)+" ש׳</td><td>"+Math.round(100*o.help/o.n)+"%</td></tr>";}).join("");
+ var weak=ks.filter(function(k){var o=st[k];return o.help>0||o.tries/o.n>1.3;}).slice(0,3);
+ return "<h3 style='margin-top:0'>מה הכי קשה (10 סדרות אחרונות)</h3><table style='width:100%;font-size:13px;border-collapse:collapse'><tr class='muted'><td>סוג</td><td>ניסיונות</td><td>זמן</td><td>עזרה</td></tr>"+rows+"</table><h3>מה לתרגל מחר</h3>"+(weak.length?"<ul>"+weak.map(function(k){return "<li>"+S.LABELS[k]+"</li>";}).join("")+"</ul><div class='muted'>הסדרה הבאה כבר תכלול יותר תרגילים מהסוגים האלה.</div>":"<div>הכול הולך מצוין — ממשיכות ככה 🌟</div>")+"<h3>היסטוריה</h3>";}
+function renderParent(){var b=$("parentBody");if(!db.hist.length){b.innerHTML="<div class='muted'>עוד אין סדרות.</div>";return;}
+ b.innerHTML=rankHtml()+db.hist.map(function(r){var d=new Date(r.date);var hard=Object.keys(r.miss).sort(function(a,c){return r.miss[c]-r.miss[a];}).map(function(k){return "<span>"+S.LABELS[k]+" ("+r.miss[k]+")</span>";}).join("");
+  var help=r.help.map(function(x){var sol=x.type===7?"<div class='muted'>הפתרון השגוי שהוצג:</div><div class='board'>"+x.wrong.map(function(s,i){return (i+1)+") = "+s;}).join("<br>")+"</div><div>הטעות: שלב "+x.bad+". הפתרון הנכון:</div>":"";
+   return "<div style='margin:8px 0'><div class='ltr' style='font-weight:800;font-size:18px'>"+x.display.replace("__","<u>"+S.fmt(x.ans)+"</u>")+(x.type===7||x.type===6?"":" "+S.fmt(x.ans))+"</div>"+sol+"<div class='board'>"+x.steps.map(function(s){return "= "+s;}).join("<br>")+"</div></div>";}).join("");
+  return "<div style='border-bottom:1px solid var(--line);padding:10px 0'><b>"+d.toLocaleDateString("he-IL")+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+"</b> · "+r.ok+"/"+r.n+" · בפעם הראשונה "+r.first+"<div class='hard'>"+hard+"</div>"+(help?"<div style='margin-top:6px'><b>צריכה עזרה ב:</b>"+help+"</div>":"")+"</div>";}).join("");}
+</script></body></html>
