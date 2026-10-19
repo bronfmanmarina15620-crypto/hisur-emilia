@@ -119,7 +119,7 @@ def main():
     for s in sessions:
         for it in s["items"]:
             o = stats.setdefault(str(it["type"]), {"n":0,"tries":0,"ms":0,"help":0,"first":0})
-            o["n"] += 1; o["tries"] += it.get("tries", 1); o["ms"] += it.get("total_ms", 0)
+            o["n"] += 1; o["tries"] += it.get("tries", 1); o["ms"] += min(it.get("total_ms", 0), 300000)
             o["help"] += it.get("outcome") == "needs_help"; o["first"] += it.get("outcome") == "correct_first"
     weak = sorted([k for k, o in stats.items() if o["help"] or o["tries"] / o["n"] > 1.3],
                   key=lambda k: -(stats[k]["help"] / stats[k]["n"] * 3 + stats[k]["tries"] / stats[k]["n"]))[:3]

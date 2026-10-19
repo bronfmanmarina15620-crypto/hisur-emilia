@@ -99,9 +99,9 @@ input.pin{width:100%;font-size:28px;text-align:center;padding:10px;border-radius
 <div class="modal hidden" id="mHow"><div class="card"><h3 style="margin-top:0">ככה פותרים</h3><ol class="rules" id="rulesList2"></ol>
 <div class="muted">דוגמה (תרגיל אחר):</div><div class="board" id="howBoard"></div><button class="btn" id="bHowClose">הבנתי, חוזרת לתרגיל</button></div></div>
 
-<script src="engine.js?v=2026-10-19e"></script>
+<script src="engine.js?v=2026-10-19f"></script>
 <script>
-var APPVER="2026-10-19e",KEY="seder_emilia_v1",PIN="2604";
+var APPVER="2026-10-19f",KEY="seder_emilia_v1",PIN="2604";
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{hist:[],last:[]};}catch(e){return {hist:[],last:[]};}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}}
 function toks(str){return String(str).trim().split(/\s+/).filter(Boolean).map(function(t){return '<span class="tk">'+t+'</span>';}).join("");}
@@ -128,9 +128,18 @@ var sesId,ses,idx,tries,input,stat,sel,done;
 var ENC=["כמעט! נסי שוב 💛","את בכיוון, עוד ניסיון אחד!"];
 var HINT=["זכרי: כפל וחילוק לפני חיבור וחיסור.","זכרי: קודם מה שבסוגריים.","בדקי כל שלב בעיניים, לאט לאט."];
 var PROMPT={6:"איזה מספר חסר? הקלידי אותו:",7:"מישהו פתר — אבל באחד השלבים יש טעות. באיזה שלב?"};
-function typeStats(){var st={};db.hist.slice(0,10).forEach(function(r){(r.items||[]).forEach(function(it){var o=st[it.type]=st[it.type]||{n:0,tries:0,ms:0,help:0,first:0};o.n++;o.tries+=it.tries;o.ms+=it.total_ms;if(it.outcome==="needs_help")o.help++;if(it.outcome==="correct_first")o.first++;});});return st;}
+function typeStats(){var st={};db.hist.slice(0,10).forEach(function(r){(r.items||[]).forEach(function(it){var o=st[it.type]=st[it.type]||{n:0,tries:0,ms:0,help:0,first:0};o.n++;o.tries+=it.tries;o.ms+=ms(it);if(it.outcome==="needs_help")o.help++;if(it.outcome==="correct_first")o.first++;});});return st;}
 function start(){ses=S.session(db.last,typeStats());db.last=ses.map(function(x){return x.key;});save();idx=0;sesId=Date.now().toString(36);stat={first:0,ok:0,help:[],typeMiss:{}};show("vPlay");render();persist();}
-function render(keep){var q=ses[idx];if(!keep||!q.entries){q.t0=Date.now();q.entries=[];}tries=keep?(q.tries||0):0;input="";sel=null;done=false;
+var CAP=300000;function vis(){return document.visibilityState!=="hidden";}
+function tStart(q){if(q&&!q.outcome&&q.runStart==null&&vis())q.runStart=Date.now();}
+function tPause(q){if(q&&q.runStart!=null){q.act=(q.act||0)+Date.now()-q.runStart;q.runStart=null;}}
+function tElapsed(q){return (q.act||0)+(q.runStart!=null?Date.now()-q.runStart:0);}
+function cur(){return ses&&ses[idx]&&!$("vPlay").classList.contains("hidden")?ses[idx]:null;}
+document.addEventListener("visibilitychange",function(){var q=cur();if(!q)return;if(vis())tStart(q);else{tPause(q);persist();}});
+window.addEventListener("pagehide",function(){var q=cur();if(q){tPause(q);persist();}});
+window.addEventListener("pageshow",function(){tStart(cur());});
+function ms(it){return Math.min(it.total_ms||0,CAP);}
+function render(keep){var q=ses[idx];if(!keep||!q.entries){q.act=0;q.entries=[];}q.runStart=null;tries=keep?(q.tries||0):0;input="";sel=null;done=false;
  $("sCount").textContent=(idx+1)+"/"+ses.length;$("sFirst").textContent=stat.first;$("sOk").textContent=stat.ok;
  $("qType").textContent=S.LABELS[q.type];$("qPrompt").textContent=PROMPT[q.type]||"כמה יוצא?";
  var e=$("qExpr");e.innerHTML=X(splitParens(q.display)).replace('class="tk">__<','class="tk" style="color:var(--pink-d)">__<');e.classList.toggle("long",q.display.length>22);
@@ -139,12 +148,12 @@ function render(keep){var q=ses[idx];if(!keep||!q.entries){q.t0=Date.now();q.ent
   w.innerHTML=q.wrong.map(function(s,i){return '<li><button data-i="'+(i+1)+'"><span>שלב '+(i+1)+'</span>'+X("= "+s)+'</button></li>';}).join("");
   [].forEach.call(w.querySelectorAll("button"),function(b){b.onclick=function(){if(done)return;check(+b.dataset.i,b);};});}
  else{w.classList.add("hidden");$("qAns").classList.remove("hidden");$("pad").classList.remove("hidden");}
- $("qAns").textContent="";}
-function check(v,btn){var q=ses[idx];if(done)return;tries++;q.entries.push(v);q.tries=tries;q.total_ms=Date.now()-q.t0;
- if(v===q.ans){done=true;q.ms_to_correct=q.total_ms;q.outcome=tries===1?"correct_first":"correct_after_retries";stat.ok++;if(tries===1)stat.first++;$("qMsg").textContent=tries===1?"מעולה! בדיוק ככה 🌟":"יפה מאוד, הצלחת! 👏";$("qMsg").className="msg ok";if(btn)btn.style.borderColor="var(--mint)";finish();persist();return;}
+ $("qAns").textContent="";if(!$("vPlay").classList.contains("hidden")||true)tStart(q);}
+function check(v,btn){var q=ses[idx];if(done)return;tries++;q.entries.push(v);q.tries=tries;var el=tElapsed(q);q.idle=q.idle||el>CAP;q.total_ms=Math.min(el,CAP);
+ if(v===q.ans){done=true;tPause(q);q.ms_to_correct=q.total_ms;q.outcome=tries===1?"correct_first":"correct_after_retries";stat.ok++;if(tries===1)stat.first++;$("qMsg").textContent=tries===1?"מעולה! בדיוק ככה 🌟":"יפה מאוד, הצלחת! 👏";$("qMsg").className="msg ok";if(btn)btn.style.borderColor="var(--mint)";finish();persist();return;}
  stat.typeMiss[q.type]=(stat.typeMiss[q.type]||0)+1;
  if(tries<3){$("qMsg").textContent=ENC[tries-1]+" "+(q.type===7?"נסי שלב אחר.":HINT[(q.type===3||q.type===6)?1:tries===2?2:0]);persist();$("qMsg").className="msg try";input="";$("qAns").textContent="";if(btn)btn.classList.add("sel");return;}
- done=true;q.outcome="needs_help";stat.help.push(idx);$("qMsg").textContent="בואי נבקש עזרה: פני לאמא, לאבא או למורה שיסבירו לך את התרגיל 💗";$("qMsg").className="msg help";$("qAns").textContent="";finish();persist();}
+ done=true;tPause(q);q.outcome="needs_help";stat.help.push(idx);$("qMsg").textContent="בואי נבקש עזרה: פני לאמא, לאבא או למורה שיסבירו לך את התרגיל 💗";$("qMsg").className="msg help";$("qAns").textContent="";finish();persist();}
 function finish(){$("bNext").classList.remove("hidden");$("sFirst").textContent=stat.first;$("sOk").textContent=stat.ok;}
 $("bNext").onclick=function(){idx++;if(idx>=ses.length)end();else{render();persist();}};
 var keys=["1","2","3","4","5","6","7","8","9","⌫","0","בדיקה"];
@@ -152,7 +161,7 @@ $("pad").innerHTML=keys.map(function(k){return '<button class="key'+(k==="⌫"?"
 [].forEach.call($("pad").querySelectorAll(".key"),function(b){b.onclick=function(){if(done)return;var k=b.dataset.k;
  if(k==="⌫")input=input.slice(0,-1);else if(k==="בדיקה"){if(input)check(+input);return;}else if(input.length<7)input+=k;
  $("qAns").textContent=input?(+input).toLocaleString("en-US"):"";$("qMsg").textContent="";};});
-function buildRec(){var n=ses.length;return {id:sesId,date:new Date(parseInt(sesId,36)).toISOString(),items:ses.filter(function(q){return q.outcome;}).map(function(q){return {type:q.type,expr:q.display,correct:q.type===7?q.correct:q.ans,expected_input:q.ans,entries:q.entries||[],tries:q.tries||0,ms_to_correct:q.ms_to_correct||null,total_ms:q.total_ms||0,outcome:q.outcome||"skipped"};}),n:n,ok:stat.ok,first:stat.first,miss:stat.typeMiss,help:stat.help.map(function(i){var q=ses[i];return {type:q.type,display:q.display,ans:q.type===7?q.correct:q.ans,bad:q.type===7?q.ans:null,wrong:q.wrong||null,steps:q.steps.map(function(s){return S.show(s.expr);})};})};}
+function buildRec(){var n=ses.length;return {id:sesId,date:new Date(parseInt(sesId,36)).toISOString(),items:ses.filter(function(q){return q.outcome;}).map(function(q){return {type:q.type,expr:q.display,correct:q.type===7?q.correct:q.ans,expected_input:q.ans,entries:q.entries||[],tries:q.tries||0,ms_to_correct:q.ms_to_correct||null,total_ms:q.total_ms||0,idle:!!q.idle,outcome:q.outcome||"skipped"};}),n:n,ok:stat.ok,first:stat.first,miss:stat.typeMiss,help:stat.help.map(function(i){var q=ses[i];return {type:q.type,display:q.display,ans:q.type===7?q.correct:q.ans,bad:q.type===7?q.ans:null,wrong:q.wrong||null,steps:q.steps.map(function(s){return S.show(s.expr);})};})};}
 function upsertRec(rec){db.hist=db.hist.filter(function(r){return r.id!==rec.id;});db.hist.unshift(rec);db.hist=db.hist.slice(0,120);}
 function persist(){if(!ses)return;var rec=buildRec();rec.partial=true;rec.answered=rec.items.length;upsertRec(rec);db.active={id:sesId,ses:ses,idx:idx,stat:stat,done:done};save();}
 function end(){var n=ses.length,rec=buildRec();rec.answered=rec.items.length;upsertRec(rec);delete db.active;save();cloudSync();show("vEnd");
@@ -160,19 +169,19 @@ function end(){var n=ses.length,rec=buildRec();rec.answered=rec.items.length;ups
  var h=$("endHelp");if(rec.help.length){h.classList.remove("hidden");h.innerHTML="<h3 style='margin-top:0'>תרגילים שנעבור עליהם יחד</h3><div class='list'>"+rec.help.map(function(x){return "<div style='font-size:20px;font-weight:700'>"+X(x.display.replace(/ =$/,""))+"</div>";}).join("")+"</div>";}else h.classList.add("hidden");}
 function waMsg(r){var L=String.fromCharCode(0x2066),P=String.fromCharCode(0x2069),it=r.items||[],N=r.n||20;
  var d=new Date(r.date),dt=d.toLocaleDateString("he-IL",{timeZone:"Asia/Jerusalem"})+" "+d.toLocaleTimeString("he-IL",{timeZone:"Asia/Jerusalem",hour:"2-digit",minute:"2-digit"});
- var c={f:0,r:0,h:0},ms=0,st={};it.forEach(function(x){c[x.outcome==="correct_first"?"f":x.outcome==="needs_help"?"h":"r"]++;ms+=x.total_ms||0;
-  var o=st[x.type]=st[x.type]||{n:0,ok:0,tries:0,ms:0,help:0};o.n++;if(x.outcome!=="needs_help")o.ok++;o.tries+=x.tries||1;o.ms+=x.total_ms||0;if(x.outcome==="needs_help")o.help++;});
- var mm=Math.floor(ms/60000),ss=Math.round(ms/1000)%60;
- var t=["*סדר פעולות – אמיליה*",dt,"",
-  "✅ נכון בפעם הראשונה: "+c.f+" מתוך "+N,"🔁 נכון אחרי כמה ניסיונות: "+c.r+" מתוך "+N,"🆘 צריכה עזרה: "+c.h+" מתוך "+N,"⏱️ זמן כולל: "+mm+" דק׳ "+ss+" שנ׳"+(r.partial?" (הסדרה עוד לא הסתיימה: "+it.length+"/"+N+")":""),"","*לפי סוג:*"];
+ var c={f:0,r:0,h:0},tms=0,st={};it.forEach(function(x){c[x.outcome==="correct_first"?"f":x.outcome==="needs_help"?"h":"r"]++;tms+=ms(x);
+  var o=st[x.type]=st[x.type]||{n:0,ok:0,tries:0,ms:0,help:0};o.n++;if(x.outcome!=="needs_help")o.ok++;o.tries+=x.tries||1;o.ms+=ms(x);if(x.outcome==="needs_help")o.help++;});
+ var mm=Math.floor(tms/60000),ss=Math.round(tms/1000)%60,part=!!r.partial||it.length<N,few=it.length<8,idl=it.filter(function(x){return x.idle||(x.total_ms||0)>CAP;}).length;
+ var t=[part?"*דוח ביניים – סדר פעולות – אמיליה*":"*סדר פעולות – אמיליה*",dt+(part?" · נעשו "+it.length+"/"+N:""),"",
+  "✅ נכון בפעם הראשונה: "+c.f+" מתוך "+N,"🔁 נכון אחרי כמה ניסיונות: "+c.r+" מתוך "+N,"🆘 צריכה עזרה: "+c.h+" מתוך "+N,"⏱️ זמן פעיל: "+mm+" דק׳ "+ss+" שנ׳"+(idl?" ("+idl+" תרגילים עם הפסקה ארוכה – נספרו עד 5 דק׳)":""),"","*לפי סוג:*"];
  S.ORDER.forEach(function(k){var o=st[k];if(o)t.push("• "+S.LABELS[k]+": "+o.ok+"/"+o.n);});
  var hl=it.filter(function(x){return x.outcome==="needs_help";});
  if(hl.length){t.push("","*צריכה עזרה בתרגילים:*");hl.forEach(function(x){t.push("• "+L+x.expr.replace(/ =$/,"")+P+" — ענתה: "+L+(x.entries||[]).map(function(v){return x.type===7?"שלב "+v:S.fmt(v);}).join(", ")+P);});}
  var sc=function(k){var o=st[k];return (o.tries/o.n-1)*1.5+o.help/o.n*3+(o.ms/o.n)/30000;};
  var weak=Object.keys(st).filter(function(k){var o=st[k];return o.help>0||o.tries/o.n>1.3;}).sort(function(a,b){return sc(b)-sc(a);}).slice(0,2);
- t.push("","*מסקנות:*");if(weak.length){t.push("הכי קשה היום: "+weak.map(function(k){return S.LABELS[k];}).join(", ")+".");t.push("מחר נתרגל: "+weak.map(function(k){return S.LABELS[k];}).join(" + ")+" (הסדרה הבאה כבר תכלול יותר מהם).");}else t.push("הכול הלך מצוין! מחר ממשיכות בתרגול מעורב 🌟");
+ t.push("","*מסקנות:*");if(few){t.push("הסדרה עוד לא הסתיימה ("+it.length+"/"+N+") – מוקדם להסיק מסקנות.");t.push("עד עכשיו: "+c.f+" נכון בפעם הראשונה, "+c.r+" אחרי כמה ניסיונות, "+c.h+" צריכה עזרה.");}else if(weak.length){t.push("הכי קשה היום: "+weak.map(function(k){return S.LABELS[k];}).join(", ")+".");t.push("מחר נתרגל: "+weak.map(function(k){return S.LABELS[k];}).join(" + ")+" (הסדרה הבאה כבר תכלול יותר מהם).");}else if(part)t.push("עד עכשיו בלי קשיים מיוחדים ("+it.length+"/"+N+"). כדאי לסיים את הסדרה.");else t.push("הכול הלך מצוין! מחר ממשיכות בתרגול מעורב 🌟");
  var asc=function(e){return e.replace(/ =$/,"").replace(/[×:−, ]/g,function(m){return {"×":"*",":":"/","−":"-",",":""," ":""}[m];});};
- var body=t.join("\n"),full={v:1,d:r.date,n:N,i:it.map(function(x){return [x.type,asc(x.expr),x.entries||[],x.tries||0,x.total_ms||0,x.outcome==="correct_first"?"f":x.outcome==="needs_help"?"h":"r"];})};
+ var body=t.join("\n"),full={v:1,d:r.date,n:N,i:it.map(function(x){return [x.type,asc(x.expr),x.entries||[],x.tries||0,ms(x),x.outcome==="correct_first"?"f":x.outcome==="needs_help"?"h":"r"];})};
  var line="#SEDER v1 "+JSON.stringify(full),msg=body+"\n\n"+line;
  if(encodeURIComponent(msg).length>6000||msg.length>1800){var ty={};Object.keys(st).forEach(function(k){var o=st[k];ty[k]=[o.n,o.ok,o.tries,o.ms,o.help];});
   msg=body+"\n\n#SEDER v1 "+JSON.stringify({v:1,d:r.date,n:N,t:ty});}
@@ -210,7 +219,7 @@ function buildWS(){var b=$("wsBody");var withItems=db.hist.filter(function(r){re
  if(!withItems.length){b.innerHTML="<div style='text-align:center;padding:20px;font-size:16px'>עוד אין תרגול שמור במכשיר הזה 🙂<br>אחרי שאמיליה תפתור כמה תרגילים, יופיע כאן דף עבודה מותאם אישית.</div>";return null;}
  var today=jdate(Date.now()),days=withItems.map(function(r){return jdate(r.date);});
  var day=days.indexOf(today)>=0?today:days.slice().sort().pop();
- var st={};withItems.forEach(function(r){if(jdate(r.date)!==day)return;r.items.forEach(function(it){var o=st[it.type]=st[it.type]||{n:0,tries:0,ms:0,help:0,first:0};o.n++;o.tries+=it.tries||1;o.ms+=it.total_ms||0;if(it.outcome==="needs_help")o.help++;if(it.outcome==="correct_first")o.first++;});});
+ var st={};withItems.forEach(function(r){if(jdate(r.date)!==day)return;r.items.forEach(function(it){var o=st[it.type]=st[it.type]||{n:0,tries:0,ms:0,help:0,first:0};o.n++;o.tries+=it.tries||1;o.ms+=ms(it);if(it.outcome==="needs_help")o.help++;if(it.outcome==="correct_first")o.first++;});});
  var weak=Object.keys(st).filter(function(k){return st[k].help||st[k].tries/st[k].n>1.3;}).sort(function(a,c){var f=function(k){return st[k].help/st[k].n*3+st[k].tries/st[k].n;};return f(c)-f(a);}).slice(0,3);
  var items=S.session((db.last||[]).slice(),st);
  var tm=new Date(Date.now()+864e5).toLocaleDateString("he-IL",{timeZone:"Asia/Jerusalem"});
