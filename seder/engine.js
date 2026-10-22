@@ -110,6 +110,6 @@ function session(prevKeys,stats){prevKeys=prevKeys||[];var PLAN=plan(stats);
   if(!same)return out;}
  throw new Error("gen fail");}
 var TEACHER=["20+30/5","120-20*5+10","(120-20)*5+10","(120-20)*(5+10)","120/20+3*2","1500+100-600*2","2*1000+500-500*3","2800+200-1000/2","(4000+6000)*(6000/6000)","12*100-100*0","24-2*1+3*3","36-6*2/3+4/4"];
-var api={session:session,plan:plan,ORDER:ORDER,solve:solve,tok:tok,show:show,fmt:fmt,LABELS:LABELS,TEACHER:TEACHER,step:step};
+var api={mkExpr:mkExpr,mkMissing:mkMissing,mkMistake:mkMistake,session:session,plan:plan,ORDER:ORDER,solve:solve,tok:tok,show:show,fmt:fmt,LABELS:LABELS,TEACHER:TEACHER,step:step};
 if(typeof module!=="undefined")module.exports=api;else root.Seder=api;
 })(this);
