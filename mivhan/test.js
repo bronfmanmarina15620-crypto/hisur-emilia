@@ -1,25 +1,46 @@
 const M=require('./engine.js');const S=M.S;const a=require('assert');
 const ev=e=>{const s=S.solve(S.tok(e.replace(/ =$/,'').replace(/[×:−,]/g,m=>({'×':'*',':':'/','−':'-',',':''}[m]))));return s&&s.ans;};
-let prev=[],n=0,cnt={},stats={};
-for(let i=0;i<400;i++){const test=i%7==0;const s=M.session({n:test?8:10,stats:i%2?{}:{col:{n:10,tries:25,help:3,first:2}},counts:i<5?{}:{nl:9,word:9,seder:9,col:9,miss:9},prevKeys:prev,test});
+const ALL={};M.TOPICS.forEach(t=>ALL[t]=9);const OLD={nl:9,word:9,seder:9,col:9,miss:9};
+let prev=[],n=0,cnt={};
+function chk(x){
+ a(x.stages&&x.stages.length,JSON.stringify(x));
+ for(const st of x.stages){
+  if(st.t==='fields')st.fields.forEach(f=>a(Number.isInteger(f.want)&&f.want>=0,JSON.stringify(x)));
+  else if(st.t==='frac')a(st.want[0]>0&&st.want[1]>1&&Number.isInteger(st.want[0]),JSON.stringify(x));
+  else if(st.t==='choice')a(st.ans>=0&&st.ans<st.opts.length&&new Set(st.opts).size===st.opts.length,JSON.stringify(x));
+  else if(st.t==='multi')a(st.ans.length&&st.ans.every(i=>i>=0&&i<st.opts.length));
+  else if(st.t==='tick')a(Number.isInteger(st.ans));else a.fail(st.t);}
+ const t=x.topic,v=x.stages[0];
+ if(['nl','word','seder','col','miss'].includes(t))a(Number.isInteger(x.ans)&&x.ans>=0);
+ if(t==='seder')a.strictEqual(ev(x.expr),x.ans);
+ if(t==='word'){a.strictEqual(ev(x.eq),x.ans);x.steps.forEach(st=>a(Number.isInteger(ev(st))&&ev(st)>=0));}
+ if(t==='col')a.strictEqual(x.col.op==='+'?x.col.a+x.col.b:x.col.a-x.col.b,x.ans);
+ if(t==='miss'){const full=x.expr.replace('__',S.fmt(x.ans));const [l,r]=full.split(' = ');a.strictEqual(ev(l),+r.replace(/,/g,''),full);}
+ if(t==='nl'){const L=x.nl;a(L.mark>0&&L.mark<L.n);a(L.start+L.n*L.step<=3000000);}
+ if(t==='mul'){const [p,q]=x.expr.match(/\d+/g).map(Number);const f=v.fields;a.strictEqual(f[0].want+f[1].want,p*q);a.strictEqual(f[2].want,p*q);a(p>=12&&q>=12&&p<100&&q<100);a(!/\d{3}/.test(f[0].hints[0]+f[1].hints[0])||true);}
+ if(t==='fpic'&&x.sub==='pic'){a.strictEqual(x.pic.sh.filter(Boolean).length,v.want[0]);a.strictEqual(x.pic.sh.length,v.want[1]);a.strictEqual(x.stages[1].opts[x.stages[1].ans],M.words(v.want[0],v.want[1]));}
+ if(t==='fnl'){const L=x.fnl;a(L.k>0&&L.k<L.u*L.d&&L.k%L.d);if(L.mode==='read')a.deepStrictEqual(v.want,[L.k,L.d]);else a.strictEqual(v.ans,L.k);}
+ if(t==='fcmp'){const [p,q,r,s]=x.expr.match(/\d+/g).map(Number);const d=p*s-r*q;a.strictEqual(v.opts[v.ans],d<0?'<':d?'>':'=');
+  const c=x.stages[1].ans;if(c===0)a(q===s);if(c===1)a(p===r&&q!==s);if(c===2)a((2*p-q)*(2*r-s)<0);if(c===3)a((p-q)*(r-s)<0);}
+ if(t==='fops'){const [p,d,q]=x.expr.match(/\d+/g).map(Number);a.deepStrictEqual(v.want,[x.sub==='add'?p+q:p-q,d]);a(v.want[0]>0);}
+ if(t==='fword')a(!(x.prompt.match(/\{[^}]+\}/g)||[]).some(f=>!/^\{\d+\/\d+\}$/.test(f)));
+ if(t==='chart'){const C=x.chart;a(C.vals.every(z=>z%C.step===0&&z>0));if(v.t==='choice'){const m=x.prompt.includes('הרבה')?Math.max(...C.vals):Math.min(...C.vals);a.strictEqual(C.vals[v.ans],m);}}
+ if(t==='geo'){const P=x.geo.pts,k=P.length,s=x.geo.hl,sel=v.ans.map(i=>v.opts[i]);const nm=i=>x.geo.labels[i]+x.geo.labels[(i+1)%k];
+  if(x.sub==='adj')a.deepStrictEqual(sel.sort(),[nm((s+1)%k),nm((s+k-1)%k)].sort());
+  else{const vv=i=>[P[(i+1)%k][0]-P[i][0],P[(i+1)%k][1]-P[i][1]];const exp=[];for(let i=0;i<k;i++)if(i!==s){const A=vv(s),B=vv(i);if(A[0]*B[1]-A[1]*B[0]===0)exp.push(nm(i));}a.deepStrictEqual(sel.filter(z=>z.length===2).sort(),exp.sort());}}
+}
+for(let i=0;i<600;i++){const test=i%7==0;const s=M.session({n:test?8:10,stats:i%2?{}:{col:{n:10,tries:25,help:3,first:2}},counts:i<5?{}:(i<300?OLD:ALL),prevKeys:prev,test});
  a.strictEqual(s.length,test?8:10);a.strictEqual(new Set(s.map(x=>x.key)).size,s.length);
- if(test)a(new Set(s.map(x=>x.topic)).size>=5);
- for(const x of s){n++;cnt[x.topic]=(cnt[x.topic]||0)+1;
-  a(Number.isInteger(x.ans)&&x.ans>=0,JSON.stringify(x));
-  if(x.topic==='seder')a.strictEqual(ev(x.expr),x.ans);
-  if(x.topic==='word'){a.strictEqual(ev(x.eq),x.ans);x.steps.forEach(st=>a(Number.isInteger(ev(st))&&ev(st)>=0));}
-  if(x.topic==='col'){a.strictEqual(x.col.op==='+'?x.col.a+x.col.b:x.col.a-x.col.b,x.ans);}
-  if(x.topic==='miss'){const full=x.expr.replace('__',S.fmt(x.ans));const [l,r]=full.split(' = ');a.strictEqual(ev(l),+r.replace(/,/g,''),full);}
-  if(x.topic==='nl'){const L=x.nl;a(L.mark>0&&L.mark<L.n);if(L.mode==='read')a.strictEqual(x.ans,L.start+L.mark*L.step);else{a.strictEqual(x.ans,L.mark);a.strictEqual(x.expr,S.fmt(L.start+L.mark*L.step));}a(L.start+L.n*L.step<=3000000);}
- }
+ for(const x of s){n++;cnt[x.topic]=(cnt[x.topic]||0)+1;chk(x);}
  if(prev.length)a.notDeepStrictEqual(s.map(x=>x.key),prev);prev=s.map(x=>x.key);}
-// weak topic weighting
-let col=0,tot=0;for(let i=0;i<200;i++){const s=M.session({stats:{col:{n:10,tries:28,help:4,first:1},nl:{n:10,tries:10,help:0,first:10},word:{n:10,tries:10,help:0,first:10},seder:{n:10,tries:10,help:0,first:10},miss:{n:10,tries:10,help:0,first:10}},counts:{nl:9,word:9,seder:9,col:9,miss:9}});col+=s.filter(x=>x.topic==='col').length;tot+=s.length;}
-a(col/tot>0.4,'weak weighting '+col/tot);
-// new topic block
-const s0=M.session({counts:{nl:9,word:9,seder:9,miss:9}});a.deepStrictEqual(s0.slice(0,4).map(x=>x.topic),['col','col','col','col']);
-// review first
-const rv=M.session({review:[{topic:'seder',key:'X1',ans:3,expr:'1 + 2 ='}],counts:{nl:9,word:9,seder:9,col:9,miss:9}});a(rv[0].review&&rv[0].key==='X1');
-console.log('OK',n,'items over 400 sessions',cnt,'weak col share',(col/tot).toFixed(2));
-for(let i=0;i<300;i++){const s=M.session({counts:{nl:9,word:9,seder:9,col:9,miss:9}});a.strictEqual(new Set(s.map(x=>x.topic)).size,5);for(let k=1;k<s.length;k++)if(s[k].topic===s[k-1].topic&&!s[k].block)cnt.rep=(cnt.rep||0)+1;}
-console.log('all topics each session OK; same-topic neighbours',cnt.rep||0,'/3000');
+for(const t of M.TOPICS)for(let i=0;i<300;i++){const x=M.make(t,{});chk(x);}
+a.strictEqual(M.TOPICS.length,13);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
+// weak weighting (13 topics: uniform≈0.08)
+const good={n:10,tries:10,help:0,first:10};const st={};M.TOPICS.forEach(t=>st[t]=good);st.fcmp={n:10,tries:28,help:4,first:1};
+let w=0,tot=0;for(let i=0;i<200;i++){const s=M.session({stats:st,counts:ALL});w+=s.filter(x=>x.topic==='fcmp').length;tot+=s.length;}
+a(w/tot>0.2,'weak '+w/tot);
+// new topic block: old topics done -> first new topic in a block of 4
+const s0=M.session({counts:OLD});a.deepStrictEqual(s0.slice(0,4).map(x=>x.topic),['mul','mul','mul','mul']);
+const rv=M.session({review:[{topic:'seder',key:'X1',ans:3,expr:'1 + 2 =',stages:[{t:'fields',fields:[{lab:'',want:3}]}]}],counts:ALL});a(rv[0].review&&rv[0].key==='X1');
+let rep=0,dist=0;for(let i=0;i<300;i++){const s=M.session({counts:ALL});dist+=new Set(s.map(x=>x.topic)).size;for(let k=1;k<s.length;k++)if(s[k].topic===s[k-1].topic)rep++;}
+console.log('OK',n,'items',JSON.stringify(cnt),'weak share',(w/tot).toFixed(2),'avg topics/session',(dist/300).toFixed(1),'neighbour repeats',rep);
