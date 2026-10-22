@@ -96,6 +96,7 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <div class="card"><h3 style="margin-top:0">פרס בבית (לא חובה)</h3><div class="muted">כמה כוכבים צריך, ומה הפרס:</div>
   <input class="t" id="rwGoal" type="number" inputmode="numeric" placeholder="למשל 50" style="margin-top:6px;direction:ltr"><input class="t" id="rwText" placeholder="למשל: גלידה עם אמא" style="margin-top:6px"><button class="btn" id="bRw">שמירה</button><div class="muted" id="rwMsg"></div></div>
  <div class="card"><h3 style="margin-top:0">היסטוריה</h3><div id="pHist"></div></div>
+ <div class="card" style="text-align:center"><div class="muted" id="syncLbl">לא מסונכרן</div><button class="btn light" id="bCloud">רענון מהענן ↻</button></div>
  <button class="btn light" id="bParentBack">חזרה</button><div class="muted" id="verLbl" style="text-align:center;margin-top:8px"></div>
 </div>
 </div>
@@ -104,10 +105,10 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <div id="brTxt" style="font-size:17px">10 קפיצות במקום, 5 סיבובי ידיים, ולשתות מים.</div><div class="big hidden" id="brCnt">45</div>
  <button class="btn" id="bBrGo">יאללה, זזות!</button><button class="btn light" id="bBrSkip">דלגי, ממשיכות</button></div></div>
 
-<script src="../seder/engine.js?v=2026-10-22b"></script>
-<script src="engine.js?v=2026-10-22b"></script>
+<script src="../seder/engine.js?v=2026-10-22c"></script>
+<script src="engine.js?v=2026-10-22c"></script>
 <script>
-var APPVER="2026-10-22b",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=300000,M=Mivhan,S=Seder;
+var APPVER="2026-10-22c",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=300000,M=Mivhan,S=Seder;
 var $=function(i){return document.getElementById(i);};
 function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.hist)return d;}catch(e){}return {hist:[],review:[],stars:0,counts:{},last:[],reward:null,settings:{}};}
 var db=load();db.review=db.review||[];db.counts=db.counts||{};db.settings=db.settings||{};db.stars=db.stars||0;
@@ -267,11 +268,39 @@ function updCalm(){var on=!!db.settings.timer;$("calm").classList.toggle("hidden
 setInterval(updCalm,15000);
 $("tTimer").checked=!!db.settings.timer;$("tTimer").onchange=function(){db.settings.timer=this.checked;save();};
 // records
-function buildRec(final){return {id:sesId,date:new Date(parseInt(sesId,36)).toISOString(),mode:mode,n:ses.length,partial:!final,stars:sesStars,hidden:hiddenCount,brk:brk,
+function buildRec(final){return {upd:Date.now(),id:sesId,date:new Date(parseInt(sesId,36)).toISOString(),mode:mode,n:ses.length,partial:!final,stars:sesStars,hidden:hiddenCount,brk:brk,
  items:ses.filter(function(q){return q.outcome;}).map(function(q){return {code:q.stages&&M.TOPICS.indexOf(q.topic)>4?q.key.slice(0,40):q.topic==="nl"?q.nl.start+"/"+q.nl.step+"/"+q.nl.mark:q.topic==="col"?q.col.a+(q.col.op==="+"?"+":"-")+q.col.b:"",topic:q.topic,sub:q.sub,text:itemText(q),math:itemMath(q),eq:q.eq||"",ans:q.ans,steps:q.steps||[],review:!!q.review,entries:q.entries,tries:q.tries,total_ms:q.total_ms||0,idle:!!q.idle,outcome:q.outcome};})};}
+// ---------- cloud sync (same table/pattern as kefel & seder)
+var CLOUD={url:"https://nrxhjzmmmzqjytmdgzjg.supabase.co",key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yeGhqem1tbXpxanl0bWRnempnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDg3MTAsImV4cCI6MjEwNDEyNDcxMH0.5KYX69e1AyXqtHHRejFarK-r1yoXdmlpav2Oazb2WIs",row:"emilia-mivhan"};
+var dirty=false,pushT=null,syncing=null;
+function ch(){return {"apikey":CLOUD.key,"Authorization":"Bearer "+CLOUD.key,"Content-Type":"application/json"};}
+function tfetch(u,o){var c=window.AbortController?new AbortController():null,t;if(c){o.signal=c.signal;t=setTimeout(function(){c.abort();},8000);}
+ return Promise.race([fetch(u,o),new Promise(function(_,rj){setTimeout(function(){rj("timeout");},8000);})]).finally(function(){clearTimeout(t);});}
+function better(x,y){var a=(x.items||[]).length,b=(y.items||[]).length;if(a!==b)return a>b?x:y;if(!!x.partial!==!!y.partial)return x.partial?y:x;return (x.upd||0)>=(y.upd||0)?x:y;}
+function merge(a,b){var m={},o={};(a.hist||[]).concat(b.hist||[]).forEach(function(r){if(r&&r.id)m[r.id]=m[r.id]?better(m[r.id],r):r;});
+ for(var k in a)o[k]=a[k];o.hist=Object.keys(m).map(function(k){return m[k];}).sort(function(x,y){return x.date<y.date?1:-1;}).slice(0,150);
+ var rv={};(b.review||[]).concat(a.review||[]).forEach(function(r){if(r&&r.item)rv[r.item.key]=r;});o.review=Object.keys(rv).map(function(k){return rv[k];});
+ o.counts={};[b.counts||{},a.counts||{}].forEach(function(c){for(var t in c)o.counts[t]=Math.max(o.counts[t]||0,c[t]);});
+ o.stars=Math.max(a.stars||0,b.stars||0);o.last=a.last&&a.last.length?a.last:(b.last||[]);o.reward=a.reward||b.reward||null;o.settings=a.settings||{};
+ if(a.active)o.active=a.active;return o;}
+function cloudData(){return {hist:db.hist,review:db.review,counts:db.counts,stars:db.stars,last:db.last,reward:db.reward,upd:Date.now()};}
+function syncLbl(){var el=$("syncLbl");if(!el)return;el.textContent=db.sync?"סנכרון אחרון: "+new Date(db.sync).toLocaleString("he-IL",{timeZone:"Asia/Jerusalem",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"לא מסונכרן";}
+// pull + merge; push only if this device has unsaved local changes, and only a merge result that has at least as many sessions as the cloud
+function cloudSync(push){if(syncing)return syncing;
+ syncing=tfetch(CLOUD.url+"/rest/v1/kefel_state?id=eq."+CLOUD.row+"&select=data,updated_at",{headers:ch()}).then(function(r){if(!r.ok)throw "get "+r.status;return r.json();})
+ .then(function(rows){var c=rows&&rows[0]&&rows[0].data||{};if(typeof c==="string")c=JSON.parse(c);var cn=(c.hist||[]).length;
+  db=merge(db,c);db.sync=Date.now();save();window.__sync="pulled";var cm={};(c.hist||[]).forEach(function(r){cm[r.id]=r;});if(db.hist.some(function(r){var o=cm[r.id];return !o||(r.items||[]).length>(o.items||[]).length||(r.upd||0)>(o.upd||0);}))dirty=true;
+  if(!$("vParent").classList.contains("hidden"))renderParent();syncLbl();
+  if(!dirty)return;if(db.hist.length<cn)throw "guard";
+  var h=ch();h.Prefer="resolution=merge-duplicates,return=minimal";dirty=false;
+  return tfetch(CLOUD.url+"/rest/v1/kefel_state?on_conflict=id",{method:"POST",headers:h,body:JSON.stringify({id:CLOUD.row,data:cloudData(),updated_at:new Date().toISOString()})})
+   .then(function(r){if(!r.ok){dirty=true;throw "post "+r.status;}window.__sync="ok";db.sync=Date.now();save();syncLbl();});})
+ .catch(function(e){window.__sync="offline:"+e;}).then(function(){syncing=null;});return syncing;}
+function schedPush(){dirty=true;clearTimeout(pushT);pushT=setTimeout(function(){cloudSync(true);},2000);}
+function flush(){if(dirty){clearTimeout(pushT);cloudSync(true);}}
 function upsert(rec){db.hist=db.hist.filter(function(r){return r.id!==rec.id;});db.hist.unshift(rec);db.hist=db.hist.slice(0,150);}
-function persist(){if(!ses)return;upsert(buildRec(false));db.active={id:sesId,ses:ses,idx:idx,mode:mode,stars:sesStars,brk:brk,hidden:hiddenCount};save();}
-function end(){var rec=buildRec(true);upsert(rec);delete db.active;save();show("vEnd");$("pBar").style.width="100%";
+function persist(){if(!ses)return;upsert(buildRec(false));db.active={id:sesId,ses:ses,idx:idx,mode:mode,stars:sesStars,brk:brk,hidden:hiddenCount};save();schedPush();}
+function end(){var rec=buildRec(true);upsert(rec);delete db.active;save();schedPush();show("vEnd");$("pBar").style.width="100%";
  var c=cnt(rec.items);
  $("endTitle").textContent=mode==="test"?"סיימת את האתגר הקצר! 🎉":"כל הכבוד, סיימת! 🎉";
  $("endStats").innerHTML="עברת <b>"+rec.n+" שלבים</b> 🏁"+(c.r?"<br>תיקנת את עצמך <b>"+c.r+"</b> פעמים 💪":"")+"<br>הרווחת היום <b>⭐ "+sesStars+"</b> כוכבים"+rewardTxt();
@@ -309,7 +338,9 @@ function waUrl(r){return "https://wa.me/"+WA+"?text="+encodeURIComponent(waMsg(r
 $("bParent").onclick=function(){back=["vStart","vPlay","vEnd"].filter(function(v){return !$(v).classList.contains("hidden");})[0]||"vStart";var q=cur();if(q)tPause(q);$("pin").value="";show("vPin");};
 var back="vStart";function goBack(){show(back);if(back==="vPlay")tStart(cur());if(back==="vStart")home();}
 $("bPinBack").onclick=goBack;$("bParentBack").onclick=goBack;
-$("bPinOk").onclick=function(){if($("pin").value!==PIN){$("pin").value="";return;}renderParent();show("vParent");};
+$("bPinOk").onclick=function(){if($("pin").value!==PIN){$("pin").value="";return;}renderParent();show("vParent");syncLbl();cloudSync(true);};
+$("bCloud").onclick=function(){$("syncLbl").textContent="מרעננת…";cloudSync(true).then(syncLbl);};
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")flush();});window.addEventListener("pagehide",flush);
 function renderParent(){var st=stats(),ks=Object.keys(st),sc=function(k){var o=st[k];return (o.tries/o.n-1)*1.5+o.help/o.n*3+(o.ms/o.n)/30000;};ks.sort(function(a,b){return sc(b)-sc(a);});
  var w=weakTopics(st,3),never=M.TOPICS.filter(function(t){return !st[t];});
  $("pRank").innerHTML="<h3 style='margin-top:0'>מה הכי קשה (12 סדרות אחרונות)</h3>"+(ks.length?"<table class='rk'><tr class='muted'><td>נושא</td><td>ניסיונות</td><td>זמן</td><td>עזרה</td></tr>"+ks.map(function(k){var o=st[k];return "<tr><td>"+M.LABELS[k]+"</td><td>"+(o.tries/o.n).toFixed(1)+"</td><td>"+Math.round(o.ms/o.n/1000)+" ש׳</td><td>"+Math.round(100*o.help/o.n)+"%</td></tr>";}).join("")+"</table>":"<div class='muted'>עוד אין נתונים.</div>")+
@@ -325,8 +356,9 @@ function renderParent(){var st=stats(),ks=Object.keys(st),sc=function(k){var o=s
   return "<div style='border-bottom:1px solid var(--line);padding:8px 0'><b>"+d.toLocaleDateString("he-IL")+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+"</b> · "+(r.mode==="test"?"אתגר קצר · ":"")+(r.partial?"<span style='color:#b07800'>באמצע ("+(r.items||[]).length+"/"+r.n+")</span> · ":"")+c.f+"/"+r.n+" בפעם הראשונה · ⭐"+(r.stars||0)+(help?"<div><b>צריכה עזרה ב:</b>"+help+"</div>":"")+"<a class='btn pink' style='font-size:14px;padding:8px' target='_blank' href='"+waUrl(r)+"'>שלחי את הדוח בוואטסאפ</a></div>";}).join(""):"<div class='muted'>עוד אין סדרות.</div>";
  var r=db.reward||{};$("rwGoal").value=r.goal||"";$("rwText").value=r.text||"";$("rwMsg").textContent="סה״כ כוכבים: "+db.stars;
  $("verLbl").textContent="גרסה "+APPVER+" · נשמרו "+db.hist.length+" סדרות במכשיר";}
-$("bRw").onclick=function(){var g=parseInt($("rwGoal").value,10);db.reward=g>0?{goal:g,text:$("rwText").value.trim()}:null;save();$("rwMsg").textContent="נשמר ✓ · סה״כ כוכבים: "+db.stars;};
+$("bRw").onclick=function(){var g=parseInt($("rwGoal").value,10);db.reward=g>0?{goal:g,text:$("rwText").value.trim()}:null;save();schedPush();$("rwMsg").textContent="נשמר ✓ · סה״כ כוכבים: "+db.stars;};
 // resume
+setTimeout(function(){cloudSync(true);},300);
 (function(){var a=db.active;if(!a||!a.ses){home();return;}ses=a.ses;ses.forEach(norm);idx=a.idx;mode=a.mode;sesId=a.id;sesStars=a.stars||0;brk=a.brk||{};hiddenCount=a.hidden||0;show("vPlay");
  if(ses[idx]&&ses[idx].outcome){next();}else render(true);})();
 </script></body></html>
