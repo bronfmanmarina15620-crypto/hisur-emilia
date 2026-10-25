@@ -49,6 +49,7 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
 .opt{padding:12px 6px;font-size:17px;font-weight:700;background:#fff;border:2px solid var(--line);border-radius:14px;color:var(--ink);line-height:1.3}.opt.sel{border-color:var(--violet);background:#f2efff}
 .sq{font-weight:700;color:var(--violet);margin:4px 0}
 .calm{font-size:12px;color:#a9a3b8;text-align:center}
+.guide{text-align:right;margin:8px 0 0;padding-inline-start:22px;line-height:1.9;font-size:15px}
 </style></head><body><div class="wrap">
 <div class="top"><div class="brand"><img class="logo" src="marina-logo.png?v=1" alt="MARINA"><div class="hello">האימון של <span>אמיליה</span> ⭐</div></div>
 <div><a class="ghost" href="../seder/">סדר פעולות</a> <button class="ghost" id="bParent">הורים</button></div></div>
@@ -108,14 +109,14 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
 <script src="../seder/engine.js?v=2026-10-22c"></script>
 <script src="engine.js?v=2026-10-22c"></script>
 <script>
-var APPVER="2026-10-22c",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=300000,M=Mivhan,S=Seder;
+var APPVER="2026-10-25a",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=300000,M=Mivhan,S=Seder;
 var $=function(i){return document.getElementById(i);};
 function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.hist)return d;}catch(e){}return {hist:[],review:[],stars:0,counts:{},last:[],reward:null,settings:{}};}
 var db=load();db.review=db.review||[];db.counts=db.counts||{};db.settings=db.settings||{};db.stars=db.stars||0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}}
 function jdate(d){return new Date(d).toLocaleDateString("en-CA",{timeZone:"Asia/Jerusalem"});}
 function addDays(day,n){var d=new Date(day+"T12:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
-function toks(str){return String(str).replace(/\(/g,"( ").replace(/\)/g," )").replace(/__/g," __ ").trim().split(/\s+/).map(function(t){var m=t.match(/^(\d+)\/(\d+)$/);return '<span class="tk">'+(m?FR(m[1],m[2]):t)+'</span>';}).join("");}
+function toks(str){return String(str).replace(/\(/g,"( ").replace(/\)/g," )").replace(/__/g," __ ").trim().split(/\s+/).map(function(t){var m=t.match(/^(\d+|□)\/(\d+|□)$/);return '<span class="tk">'+(m?FR(m[1],m[2]):t)+'</span>';}).join("");}
 function X(str){return '<span class="ex" dir="ltr">'+toks(str)+'</span>';}
 function show(id){["vStart","vPlay","vEnd","vPin","vParent"].forEach(function(v){$(v).classList.toggle("hidden",v!==id);});}
 function itemText(it){if(it.topic==="col")return S.fmt(it.col.a)+" "+it.col.op+" "+S.fmt(it.col.b);if(it.topic==="word")return it.prompt;
@@ -168,7 +169,7 @@ function render(keep){var q=ses[idx];if(!keep||!q.entries){q.act=0;q.entries=[];
  renderStage();updCalm();tStart(q);}
 function renderStage(){var q=ses[idx],st=stg(q)||q.stages[q.stages.length-1],t=st.t,c=$("qSt");inputs={ans:"",s0:"",s1:""};box="ans";sel=[];
  var single=t==="fields"&&st.fields.length===1&&!st.fields[0].lab;
- $("qSq").textContent=st.q||"";$("qSq").classList.toggle("hidden",!st.q);
+ var sq=st.q||(st.whole?"תשובה שלמה (כמו 1 או 2)? אפשר לכתוב רק למעלה. שבר שווה גם נחשב נכון.":"");$("qSq").textContent=sq;$("qSq").classList.toggle("hidden",!sq);
  $("qAns").classList.toggle("hidden",!single||q.topic==="col");$("pad").classList.toggle("hidden",!(t==="fields"||t==="frac")||done);
  var h="";
  if(t==="fields"&&!single){if(!q.okf)q.okf=st.fields.map(function(){return false;});h=st.fields.map(function(f,i){return '<div class="frow"><span class="flab">'+X(f.lab)+'</span><div class="ans fb'+(q.okf[i]?" ok":"")+'" data-b="f'+i+'">'+(q.okf[i]?fa(f.want):"")+'</div></div>';}).join("");
@@ -224,14 +225,15 @@ function paint(){var q=ses[idx];Object.keys(inputs).forEach(function(k){var el=d
  if(k==="⌫")inputs[box]=inputs[box].slice(0,-1);else if(inputs[box].length<8)inputs[box]+=k;paint();$("qMsg").textContent="";
  var el=document.querySelector('[data-b="'+box+'"]');if(el)el.classList.remove("no");};});
 function submit(){var q=ses[idx],st=stg(q);
- if(st.t==="frac"){if(!inputs.n||!inputs.d){box=inputs.n?"d":"n";renderAct();msg("השלימי את המונה ואת המכנה","neutral");return;}check([+inputs.n,+inputs.d],inputs.n+"/"+inputs.d);return;}
+ if(st.t==="frac"){if(st.whole&&inputs.n&&!inputs.d){check([+inputs.n,1],inputs.n);return;}if(!inputs.n||!inputs.d){box=inputs.n?"d":"n";renderAct();msg("השלימי את המונה ואת המכנה","neutral");return;}check([+inputs.n,+inputs.d],inputs.n+"/"+inputs.d);return;}
  if(st.fields.length===1&&!st.fields[0].lab){if(inputs.ans)check(+inputs.ans,+inputs.ans);return;}
  var empty=-1;st.fields.forEach(function(f,i){if(!q.okf[i]&&!inputs["f"+i]&&empty<0)empty=i;});
  if(empty>=0){box="f"+empty;renderAct();msg("השלימי את כל השורות ואז בדקי","neutral");return;}
  check(st.fields.map(function(f,i){return q.okf[i]?f.want:+inputs["f"+i];}),st.fields.map(function(f,i){return q.okf[i]?f.want:inputs["f"+i];}).join("|"));}
 function renderAct(){[].forEach.call(document.querySelectorAll("[data-b]"),function(x){x.classList.toggle("act",x.dataset.b===box);});}
 var ENC=["כמעט! ","עוד ניסיון אחד – את יכולה! "];
-function judge(q,st,v){if(st.t==="frac")return v[1]>0&&v[0]*st.want[1]===v[1]*st.want[0];
+function judge(q,st,v){if(st.pair){var okp=M.pairOk(st.pair,v[0],v[1]);q.bad=okp?-1:0;if(okp)st.fields.forEach(function(f,i){f.want=v[i];q.okf[i]=true;});return okp;}
+ if(st.t==="frac")return v[1]>0&&v[0]*st.want[1]===v[1]*st.want[0];
  if(st.t==="choice")return v===st.ans;if(st.t==="multi")return JSON.stringify(v)===JSON.stringify(st.ans.slice().sort());if(st.t==="tick")return v===st.ans;
  if(st.fields.length===1)return (Array.isArray(v)?v[0]:v)===st.fields[0].want;
  var bad=-1;st.fields.forEach(function(f,i){if(q.okf[i])return;if(v[i]===f.want)q.okf[i]=true;else if(bad<0)bad=i;});q.bad=bad;return bad<0;}
@@ -244,7 +246,7 @@ function check(v,shown){var q=ses[idx];if(done)return;var st=stg(q);q.entries.pu
  q.wrong++;q.tries=q.wrong+1;
  if(q.wrong<3){var hs=st.t==="fields"&&q.bad>=0&&st.fields[q.bad].hints?st.fields[q.bad].hints:q.hints;msg(ENC[q.wrong-1]+hs[q.wrong-1],"try");clearWrong(st);persist();return;}
  done=true;tPause(q);q.tries=3;q.outcome="needs_help";sesStars+=1;db.stars+=1;
- msg("בואי נבקש עזרה: פני לאמא, לאבא או למורה שיסבירו לך את התרגיל 💗 (⭐ על ההתמדה)","help");clearWrong(st);lockStage(false);fin();}
+ msg("בואי נבקש עזרה: פני לאמא, לאבא או למורה שיסבירו לך את התרגיל 💗 (⭐ על ההתמדה)","help");if(q.guide)$("qMsg").innerHTML=esc($("qMsg").textContent)+'<ol class="guide">'+q.guide.map(function(g){return "<li>"+PH(g.replace(/(\d+)\/(\d+)/g,"{$1/$2}"))+"</li>";}).join("")+"</ol>";clearWrong(st);lockStage(false);fin();}
 function clearWrong(st){var q=ses[idx];
  if(st.t==="fields"&&st.fields.length>1){st.fields.forEach(function(f,i){var el=document.querySelector('[data-b="f'+i+'"]');if(q.okf[i]){el.classList.add("ok");el.textContent=fa(f.want);}else{inputs["f"+i]="";el.classList.add("no");el.textContent="";}});var fi=q.okf.indexOf(false);box="f"+fi;renderAct();}
  else if(st.t==="frac"){inputs.n="";inputs.d="";box="n";paint();renderAct();}

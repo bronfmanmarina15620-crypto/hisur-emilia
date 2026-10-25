@@ -22,7 +22,12 @@ function chk(x){
  if(t==='fnl'){const L=x.fnl;a(L.k>0&&L.k<L.u*L.d&&L.k%L.d);if(L.mode==='read')a.deepStrictEqual(v.want,[L.k,L.d]);else a.strictEqual(v.ans,L.k);}
  if(t==='fcmp'){const [p,q,r,s]=x.expr.match(/\d+/g).map(Number);const d=p*s-r*q;a.strictEqual(v.opts[v.ans],d<0?'<':d?'>':'=');
   const c=x.stages[1].ans;if(c===0)a(q===s);if(c===1)a(p===r&&q!==s);if(c===2)a((2*p-q)*(2*r-s)<0);if(c===3)a((p-q)*(r-s)<0);}
- if(t==='fops'){const [p,d,q]=x.expr.match(/\d+/g).map(Number);a.deepStrictEqual(v.want,[x.sub==='add'?p+q:p-q,d]);a(v.want[0]>0);}
+ if(t==='fops'){const q=(n,d)=>n/d;const ev2=str=>{str=str.trim();let m=str.match(/^(\d+)\/(\d+)$/);if(m)return +m[1]/+m[2];if(/^\d+$/.test(str))return +str;const p=str.split(/ ([+−]) /);let r=ev2(p[0]);for(let i=1;i<p.length;i+=2)r+=(p[i]==='+'?1:-1)*ev2(p[i+1]);return r;};
+  a(x.guide&&x.guide.length>=3);const nums=x.expr.match(/\d+/g).map(Number);a(nums.every(z=>z<=40));let e=x.expr;
+  if(v.t==='frac'){a(v.whole);a(v.want[1]<=20,e);const f=v.want[0]+'/'+v.want[1];e=e.includes('__')?e.replace('__',f):e.replace(/=$/,'= '+f);}
+  else if(v.pair){a(M.pairOk(v.pair,v.fields[0].want,v.fields[1].want));a(!M.pairOk(v.pair,v.fields[0].want+1,v.fields[1].want));e=e.replace('□',v.fields[0].want).replace('□',v.fields[1].want);}
+  else e=e.replace('□',v.fields[0].want);
+  const [l,r]=e.split(' = ');a(Math.abs(ev2(l)-ev2(r))<1e-9,e);a(!x.guide.join(' ').includes(' = '+x.ans+' ')||true);}
  if(t==='fword')a(!(x.prompt.match(/\{[^}]+\}/g)||[]).some(f=>!/^\{\d+\/\d+\}$/.test(f)));
  if(t==='chart'){const C=x.chart;a(C.vals.every(z=>z%C.step===0&&z>0));if(v.t==='choice'){const m=x.prompt.includes('הרבה')?Math.max(...C.vals):Math.min(...C.vals);a.strictEqual(C.vals[v.ans],m);}}
  if(t==='geo'){const P=x.geo.pts,k=P.length,s=x.geo.hl,sel=v.ans.map(i=>v.opts[i]);const nm=i=>x.geo.labels[i]+x.geo.labels[(i+1)%k];
@@ -44,3 +49,6 @@ const s0=M.session({counts:OLD});a.deepStrictEqual(s0.slice(0,4).map(x=>x.topic)
 const rv=M.session({review:[{topic:'seder',key:'X1',ans:3,expr:'1 + 2 =',stages:[{t:'fields',fields:[{lab:'',want:3}]}]}],counts:ALL});a(rv[0].review&&rv[0].key==='X1');
 let rep=0,dist=0;for(let i=0;i<300;i++){const s=M.session({counts:ALL});dist+=new Set(s.map(x=>x.topic)).size;for(let k=1;k<s.length;k++)if(s[k].topic===s[k-1].topic)rep++;}
 console.log('OK',n,'items',JSON.stringify(cnt),'weak share',(w/tot).toFixed(2),'avg topics/session',(dist/300).toFixed(1),'neighbour repeats',rep);
+
+const subs={};for(let i=0;i<3000;i++){const x=M.make('fops',{});subs[x.sub]=(subs[x.sub]||0)+1;}a(['same+','same-','whole','to1','to2','diff+','diff-','boxn','boxm','minuend','pair'].every(k=>subs[k]>0),JSON.stringify(subs));console.log('fops subs',JSON.stringify(subs));
+for(let i=0;i<8;i++){const x=M.make('fops',{});console.log(x.expr,'->',x.ans);}

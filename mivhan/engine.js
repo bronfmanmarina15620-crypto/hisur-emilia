@@ -15,7 +15,7 @@ var HINTS={
  fnl:["לכמה חלקים שווים מחולק כל שלם (מ־0 עד 1)? זה המכנה.","ספרי את הקפיצות מ־0 ועד החץ."],
  fcmp:["אם המכנה שווה – משווים מונים. אם המונה שווה – מכנה קטן יותר = חלק גדול יותר.","נסי להשוות כל שבר לחצי או לשלם."],
  fword:["מצאי קודם כמה זה חלק אחד (חלקי במכנה).","בשבר עם אותו מכנה – מחברים או מחסרים רק את המונים."],
- fops:["כשהמכנה שווה – המכנה נשאר, ומחברים או מחסרים את המונים.","בדקי את המונה שוב."],
+ fops:["אם המכנים שונים – קודם מוצאים מכנה משותף וממירים. אחר כך מחברים או מחסרים רק את המונים.","בדקי: המכנה המשותף נכון? ההמרה נכונה? אפשר גם לכתוב שבר שווה – למשל 2/4 במקום 1/2."],
  geo:["צלעות מקבילות לא נפגשות לעולם, גם אם ממשיכים אותן.","צלעות סמוכות נוגעות זו בזו בקודקוד משותף."],
  chart:["קראי את הכותרת ואת המקרא לפני שמתחילות.","עקבי עם האצבע מראש העמודה אל המספרים בצד."],
  miss:["נסי להציב את המספר שלך ובדקי אם יוצא נכון.","איזו פעולה הפוכה תעזור למצוא את המספר החסר?"]};
@@ -107,11 +107,30 @@ var FW=[function(){var d=P([2,3,4,5]),n=R(1,d-1),T=d*R(3,8);return ["בכיתה 
  function(){var d=P([4,5,6,8,10]),a=R(2,d-1),b=R(1,a-1);return ["בבקבוק היו {"+fr(a,d)+"} ליטר מיץ. שתו {"+fr(b,d)+"} ליטר. כמה ליטר נשאר?",[a-b,d]];}];
 function mkFword(){var t=P(FW)(),f=Array.isArray(t[1]);
  return {topic:"fword",sub:f?"frac":"whole",prompt:t[0],expr:"",ans:f?fr(t[1][0],t[1][1]):t[1],stages:[f?{t:"frac",want:t[1]}:numStage(t[1])],key:"fw"+t[0]};}
-// add/sub like denominators
-function mkFops(){var d=P([3,4,5,6,8,10]),add=Math.random()<.55,a,b;
- if(add){a=R(1,d-1);b=R(1,d-1);}else{a=R(2,d+R(0,d-1));b=R(1,a-1);}
- var r=add?a+b:a-b;if(r<=0||r>2*d)return null;
- return {topic:"fops",sub:add?"add":"sub",prompt:"כמה יוצא?",expr:fr(a,d)+(add?" + ":" − ")+fr(b,d)+" =",ans:fr(r,d),stages:[{t:"frac",want:[r,d]}],key:"fo"+a+(add?"+":"-")+b+"/"+d};}
+function pairOk(p,a,b){return b>0&&a>=0&&a*b+p.n2*p.d1===p.T*p.d1*b;}
+// add/sub fractions (worksheet 25.10): same denom, 1−x, missing to 1/2, related denoms, boxes
+function lcm(a,b){return a/gcd(a,b)*b;}
+function gd(a,b,op){var d=lcm(b[1],a[1]),G=["מוצאים מכנה משותף: "+d+"."],cv=[];[a,b].forEach(function(f){if(f[1]!==d)cv.push(fr(f[0],f[1])+" = "+fr(f[0]*d/f[1],d));});
+ G.push(cv.length?"ממירים: "+cv.join(" , "):"המכנים כבר שווים – לא צריך להמיר.");G.push("עכשיו "+(op==="+"?"מחברים":"מחסרים")+" רק את המונים. המכנה נשאר "+d+".");G.push("בודקות: מציבות את התשובה בתרגיל ורואות שזה מסתדר.");return G;}
+function mkFops(){var k=P([0,0,1,2,2,3,3,3,4,5,6]),d,a,b,e,x,want,st,sub,pr="כמה יוצא?",G,T;
+ if(k===0){d=R(3,12);var add=Math.random()<.55;if(add){a=R(1,d-1);b=R(1,d-a);}else{a=R(2,d);b=R(1,a-1);}
+  sub=add?"same+":"same-";e=fr(a,d)+(add?" + ":" − ")+fr(b,d)+" =";want=[add?a+b:a-b,d];G=gd([a,d],[b,d],add?"+":"-");}
+ else if(k===1){d=R(3,12);a=R(1,d-1);sub="whole";e="1 − "+fr(a,d)+" =";want=[d-a,d];G=["כותבות את 1 כשבר עם אותו מכנה: 1 = "+fr(d,d)+".","עכשיו מחסרים את המונים. המכנה נשאר "+d+".","בודקות: התשובה ועוד "+fr(a,d)+" צריך לתת 1."];}
+ else if(k===2){T=P([1,1,2]);d=R(3,T===2?10:20);a=R(1,d-1);sub="to"+T;pr="מה חסר?";e=fr(a,d)+" + __ = "+T;want=[T*d-a,d];
+  G=["כותבות את "+T+" כשבר עם המכנה "+d+": "+T+" = "+fr(T*d,d)+".","כמה חסר במונה מ־"+a+" עד "+T*d+"?","בודקות: "+fr(a,d)+" ועוד התשובה צריך לתת "+T+"."];}
+ else if(k===3){var s=R(2,10),m=P([2,2,3,4]),L=s*m;if(L>20)return null;var A=[R(1,s-1),s],B=[R(1,L-1),L];if(Math.random()<.5){var t=A;A=B;B=t;}
+  var op=Math.random()<.7?"+":"-";x=A[0]*L/A[1]+(op==="+"?1:-1)*B[0]*L/B[1];if(x<=0)return null;sub="diff"+op;e=fr(A[0],A[1])+(op==="+"?" + ":" − ")+fr(B[0],B[1])+" =";want=[x,L];G=gd(A,B,op);}
+ else if(k===4){var s2=R(2,6),m2=P([2,3,4]),L2=s2*m2;if(L2>20)return null;
+  if(Math.random()<.6){a=R(1,s2-1);x=L2-a*m2;sub="boxn";pr="איזה מספר חסר בריבוע?";e=fr(a,s2)+" + □/"+L2+" = 1";G=["כדי לחבר צריך מכנה משותף: "+L2+".","ממירים: "+fr(a,s2)+" = "+fr(a*m2,L2)+" , ו־1 = "+fr(L2,L2)+".","כמה חסר במונה עד "+L2+"?"];}
+  else{b=R(1,L2-1);x=L2-b;sub="boxm";pr="איזה מספר חסר בריבוע?";e="1 − □/"+L2+" = "+fr(b,L2);G=["כותבות את 1 כשבר: 1 = "+fr(L2,L2)+".","כמה צריך להוריד מ־"+L2+" כדי שיישאר "+b+"?","בודקות: מציבות ובודקות שזה מסתדר."];}
+  st={t:"fields",fields:[{lab:"□ =",want:x}]};want=null;}
+ else if(k===5){d=R(3,12);a=R(1,d-2);b=R(1,d-a);sub="minuend";pr="מה חסר?";e="__ − "+fr(a,d)+" = "+fr(b,d);want=[a+b,d];G=["חיסור הפוך: מחברים את מה שהורידו לתוצאה.",fr(b,d)+" + "+fr(a,d)+" – המכנה נשאר "+d+", מחברים את המונים.","בודקות: מהתשובה מורידים "+fr(a,d)+" – יוצא "+fr(b,d)+"?"];}
+ else{d=R(4,12);b=R(1,d-1);sub="pair";pr="השלימי את שני הריבועים:";e="□/"+d+" + "+b+"/□ = 1";
+  st={t:"fields",pair:{d1:d,n2:b,T:1},fields:[{lab:"□/"+d+" ←",want:d-b},{lab:b+"/□ ←",want:d}]};want=null;
+  G=["רמז: נסי לבחור לשבר השני את אותו מכנה – "+d+".","1 = "+fr(d,d)+". כמה חסר ל־"+b+" כדי להגיע ל־"+d+"?","בודקות: מחברים את שני השברים – יוצא 1?"];}
+ if(!st)st={t:"frac",want:want,whole:true};
+ if(!G)G=gd([1,2],[1,2],"+");
+ return {topic:"fops",sub:sub,prompt:pr,expr:e,ans:want?fr(want[0],want[1]):st.fields.map(function(f){return f.want;}).join(","),stages:[st],guide:G,key:"fo"+e};}
 // geometry: parallel / adjacent sides
 var SHAPES=[["מלבן",[[60,40],[300,40],[300,170],[60,170]]],["מקבילית",[[100,40],[320,40],[260,170],[40,170]]],["טרפז",[[110,40],[250,40],[320,170],[40,170]]],
  ["טרפז ישר־זווית",[[60,40],[220,40],[320,170],[60,170]]],["מרובע",[[90,30],[290,70],[320,170],[50,150]]],["משושה",[[120,30],[240,30],[300,105],[240,180],[120,180],[60,105]]]];
@@ -159,6 +178,6 @@ function session(o){o=o||{};var n=o.n||10,seen={},out=[],i;
  for(i=1;i<rest.length;i++){if(rest[i].topic===rest[i-1].topic){for(var j=i+1;j<rest.length;j++)if(rest[j].topic!==rest[i-1].topic){var tmp=rest[i];rest[i]=rest[j];rest[j]=tmp;break;}}}
  if(o.test){for(i=rest.length-1;i>0;i--){var r=Math.floor(Math.random()*(i+1));var t2=rest[i];rest[i]=rest[r];rest[r]=t2;}}
  return out.concat(rest).slice(0,n);}
-var api={words:words,REASONS:REASONS,gcd:gcd,session:session,make:make,TOPICS:TOPICS,LABELS:LABELS,HINTS:HINTS,fmt:fmt,S:S,weights:weights};
+var api={pairOk:pairOk,words:words,REASONS:REASONS,gcd:gcd,session:session,make:make,TOPICS:TOPICS,LABELS:LABELS,HINTS:HINTS,fmt:fmt,S:S,weights:weights};
 if(typeof module!=="undefined")module.exports=api;else root.Mivhan=api;
 })(this);
