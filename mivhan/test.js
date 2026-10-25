@@ -52,3 +52,5 @@ console.log('OK',n,'items',JSON.stringify(cnt),'weak share',(w/tot).toFixed(2),'
 
 const subs={};for(let i=0;i<3000;i++){const x=M.make('fops',{});subs[x.sub]=(subs[x.sub]||0)+1;}a(['same+','same-','whole','to1','to2','diff+','diff-','boxn','boxm','minuend','pair'].every(k=>subs[k]>0),JSON.stringify(subs));console.log('fops subs',JSON.stringify(subs));
 for(let i=0;i<8;i++){const x=M.make('fops',{});console.log(x.expr,'->',x.ans);}
+for(const t of M.TOPICS){let pv=[];for(let k=0;k<20;k++){const s=M.session({only:t,prevKeys:pv,review:[{topic:'zz',key:'Z'}]});a.strictEqual(s.length,10,t);a(s.every(x=>x.topic===t),t);s.forEach(chk);pv=s.map(x=>x.key);}}
+console.log('topic sessions OK');

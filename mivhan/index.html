@@ -25,6 +25,7 @@ body{margin:0;background:linear-gradient(180deg,#f3f0ff 0%,var(--bg) 45%);color:
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;direction:ltr}
 .key{padding:14px 0;font-size:26px;font-weight:800;background:#fff;border:1px solid var(--line);border-radius:16px;color:var(--ink)}
 .key:active{background:#f7f2ee}.key.go{background:var(--mint);border-color:var(--mint);color:#fff;font-size:18px}.key.del{background:#fff2f5;color:var(--pink-d);font-size:20px}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 6px}.tbtn{min-height:64px;border-radius:16px;border:2px solid #d9d0f0;background:#fff;color:#33303c;font-size:17px;font-weight:800;padding:10px 8px;line-height:1.3}.tbtn.new{border-color:var(--pink);background:#fff0f6}.tbtn small{display:block;color:var(--pink);font-size:12px}
 .btn{display:block;width:100%;padding:13px;border-radius:16px;border:none;background:var(--mint);color:#fff;font-size:17px;font-weight:800;margin-top:8px;text-align:center;text-decoration:none}
 .btn.pink{background:var(--pink)}.btn.violet{background:var(--violet)}.btn.light{background:#fff;border:1px dashed #d9d0f0;color:var(--violet);font-size:14px;padding:9px}
 .hidden{display:none!important}
@@ -55,15 +56,19 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
 <div><a class="ghost" href="../seder/">סדר פעולות</a> <button class="ghost" id="bParent">הורים</button></div></div>
 
 <div id="vStart">
+ <button class="btn pink hidden" id="bResume">▶️ להמשיך מאיפה שעצרת</button>
+ <h2 style="margin:14px 4px 4px">במה מתאמנות היום?</h2>
+ <div class="tgrid" id="tGrid"></div>
  <div class="card"><h2 style="margin:0 0 6px">יוצאות לאימון 💜</h2>
  <div class="muted">13 נושאים: מספרים, סדר פעולות, כפל, שברים, הנדסה ודיאגרמות. כל תרגיל הוא שלב, וכל שלב מביא כוכבים.</div>
  <div class="stars" id="starLine" style="margin-top:8px"></div><div class="rw hidden" id="rwLine"></div>
  <label class="tog"><input type="checkbox" id="tTimer"> שעון רגוע (מראה כמה זמן תרגלת)</label></div>
- <button class="btn" id="bStart">אימון · 10 שלבים</button>
+ <button class="btn" id="bStart">🔀 תרגול מעורב · 10 שלבים מכל הנושאים</button>
  <button class="btn violet" id="bTest">אתגר קצר · 8 שלבים, בקצב שלך</button>
 </div>
 
 <div id="vPlay" class="hidden">
+ <button class="ghost" id="bAll" style="margin-bottom:8px">→ לכל הנושאים</button>
  <div class="prog"><i id="pBar" style="width:0"></i></div>
  <div class="pinfo"><span id="pCount">1/10</span><span class="stars" id="pStars"></span></div>
  <div class="card">
@@ -106,10 +111,10 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <div id="brTxt" style="font-size:17px">10 קפיצות במקום, 5 סיבובי ידיים, ולשתות מים.</div><div class="big hidden" id="brCnt">45</div>
  <button class="btn" id="bBrGo">יאללה, זזות!</button><button class="btn light" id="bBrSkip">דלגי, ממשיכות</button></div></div>
 
-<script src="../seder/engine.js?v=2026-10-22c"></script>
-<script src="engine.js?v=2026-10-22c"></script>
+<script src="../seder/engine.js?v=2026-10-25b"></script>
+<script src="engine.js?v=2026-10-25b"></script>
 <script>
-var APPVER="2026-10-25a",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=300000,M=Mivhan,S=Seder;
+var APPVER="2026-10-25b",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=300000,M=Mivhan,S=Seder;
 var $=function(i){return document.getElementById(i);};
 function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.hist)return d;}catch(e){}return {hist:[],review:[],stars:0,counts:{},last:[],reward:null,settings:{}};}
 var db=load();db.review=db.review||[];db.counts=db.counts||{};db.settings=db.settings||{};db.stars=db.stars||0;
@@ -140,8 +145,8 @@ function ms(it){return Math.min(it.total_ms||0,CAP);}
 var ses=null,idx=0,mode="practice",sesId=null,done=false,tries=0,box="ans",inputs={},sel=[],hiddenCount=0,brk={offered:false,taken:false},sesStars=0,round=1;
 function stats(days){var st={};db.hist.slice(0,days||12).forEach(function(r){(r.items||[]).forEach(function(it){var o=st[it.topic]=st[it.topic]||{n:0,tries:0,ms:0,help:0,first:0};o.n++;o.tries+=it.tries||1;o.ms+=ms(it);if(it.outcome==="needs_help")o.help++;if(it.outcome==="correct_first")o.first++;});});return st;}
 function dueReview(){var today=jdate(Date.now());return db.review.filter(function(r){return r.due.length&&r.due[0]<=today;}).slice(0,3);}
-function start(m){mode=m;var test=m==="test",rv=test?[]:dueReview();
- ses=M.session({n:test?8:10,test:test,stats:stats(),counts:db.counts,review:rv.map(function(r){return r.item;}),prevKeys:db.last});
+var only=null;function start(m,tp){mode=m;only=tp||null;var test=m==="test",rv=test?[]:dueReview();
+ ses=M.session({n:test?8:10,test:test,only:only,stats:stats(),counts:db.counts,review:rv.map(function(r){return r.item;}),prevKeys:db.last});
  if(!test)rv.forEach(function(r){if(ses.some(function(q){return q.key===r.item.key;}))r.due.shift();});
  db.review=db.review.filter(function(r){return r.due.length;});
  ses.forEach(norm);db.last=ses.map(function(q){return q.key;});sesId=Date.now().toString(36);idx=0;sesStars=0;hiddenCount=0;brk={offered:false,taken:false};
@@ -157,7 +162,7 @@ function FR(n,d){return '<span class="fr"><span>'+n+'</span><span>'+d+'</span></
 function PH(s){return esc(s).replace(/\{(\d+)\/(\d+)\}/g,function(m,n,d){return '<span class="ex" dir="ltr">'+FR(n,d)+'</span>';});}
 function stg(q){return q.stages[q.si||0];}
 function render(keep){var q=ses[idx];if(!keep||!q.entries){q.act=0;q.entries=[];q.si=0;q.wrong=0;q.okf=null;}q.si=q.si||0;q.wrong=q.wrong||0;q.runStart=null;done=!!q.outcome;sel=[];
- $("pBar").style.width=(100*idx/ses.length)+"%";$("pCount").textContent=(mode==="test"?"אתגר קצר · ":"")+"שלב "+(idx+1)+" מתוך "+ses.length;$("pStars").textContent="⭐ "+sesStars;
+ $("pBar").style.width=(100*idx/ses.length)+"%";$("pCount").textContent=(mode==="test"?"אתגר קצר · ":only?M.LABELS[only]+" · ":"")+"שלב "+(idx+1)+" מתוך "+ses.length;$("pStars").textContent="⭐ "+sesStars;
  $("qType").textContent=M.LABELS[q.topic];$("qRv").classList.toggle("hidden",!q.review);
  $("qPrompt").innerHTML=PH(q.prompt);var e=$("qExpr");e.innerHTML=q.expr?X(q.expr):"";e.classList.toggle("long",(q.expr||"").length>20);
  $("qPrompt").style.fontSize=q.topic==="word"||q.topic==="fword"?"19px":"16px";
@@ -301,7 +306,7 @@ function cloudSync(push){if(syncing)return syncing;
 function schedPush(){dirty=true;clearTimeout(pushT);pushT=setTimeout(function(){cloudSync(true);},2000);}
 function flush(){if(dirty){clearTimeout(pushT);cloudSync(true);}}
 function upsert(rec){db.hist=db.hist.filter(function(r){return r.id!==rec.id;});db.hist.unshift(rec);db.hist=db.hist.slice(0,150);}
-function persist(){if(!ses)return;upsert(buildRec(false));db.active={id:sesId,ses:ses,idx:idx,mode:mode,stars:sesStars,brk:brk,hidden:hiddenCount};save();schedPush();}
+function persist(){if(!ses)return;upsert(buildRec(false));db.active={id:sesId,only:only,ses:ses,idx:idx,mode:mode,stars:sesStars,brk:brk,hidden:hiddenCount};save();schedPush();}
 function end(){var rec=buildRec(true);upsert(rec);delete db.active;save();schedPush();show("vEnd");$("pBar").style.width="100%";
  var c=cnt(rec.items);
  $("endTitle").textContent=mode==="test"?"סיימת את האתגר הקצר! 🎉":"כל הכבוד, סיימת! 🎉";
@@ -312,8 +317,8 @@ function end(){var rec=buildRec(true);upsert(rec);delete db.active;save();schedP
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
 function cnt(items){var c={f:0,r:0,h:0};items.forEach(function(x){c[x.outcome==="correct_first"?"f":x.outcome==="needs_help"?"h":"r"]++;});return c;}
 function rewardTxt(){var r=db.reward;if(!r||!r.goal)return "";var left=Math.max(0,r.goal-db.stars);return left?"<br>עוד <b>"+left+"</b> כוכבים ל"+esc(r.text||"פרס")+" 🎁":"<br>🎁 הגעת ל"+esc(r.text||"פרס")+"! ספרי לאמא";}
-$("bMore").onclick=function(){start("practice");};$("bHome").onclick=home;
-function home(){show("vStart");$("starLine").textContent="⭐ סך הכול: "+db.stars+" כוכבים";var r=db.reward;$("rwLine").classList.toggle("hidden",!(r&&r.goal));if(r&&r.goal)$("rwLine").innerHTML=rewardTxt().replace(/^<br>/,"");}
+$("bMore").onclick=function(){start("practice",only);};$("bHome").onclick=home;
+function home(){show("vStart");$("bResume").classList.toggle("hidden",!(db.active&&db.active.ses));$("starLine").textContent="⭐ סך הכול: "+db.stars+" כוכבים";var r=db.reward;$("rwLine").classList.toggle("hidden",!(r&&r.goal));if(r&&r.goal)$("rwLine").innerHTML=rewardTxt().replace(/^<br>/,"");}
 $("bStart").onclick=function(){start("practice");};$("bTest").onclick=function(){start("test");};
 // conclusions
 function weakTopics(st,k){var sc=function(t){var o=st[t];return (o.tries/o.n-1)*1.5+o.help/o.n*3+(o.ms/o.n)/30000;};return Object.keys(st).filter(function(t){var o=st[t];return o.help>0||o.tries/o.n>1.3;}).sort(function(a,b){return sc(b)-sc(a);}).slice(0,k||2);}
@@ -361,6 +366,11 @@ function renderParent(){var st=stats(),ks=Object.keys(st),sc=function(k){var o=s
 $("bRw").onclick=function(){var g=parseInt($("rwGoal").value,10);db.reward=g>0?{goal:g,text:$("rwText").value.trim()}:null;save();schedPush();$("rwMsg").textContent="נשמר ✓ · סה״כ כוכבים: "+db.stars;};
 // resume
 setTimeout(function(){cloudSync(true);},300);
-(function(){var a=db.active;if(!a||!a.ses){home();return;}ses=a.ses;ses.forEach(norm);idx=a.idx;mode=a.mode;sesId=a.id;sesStars=a.stars||0;brk=a.brk||{};hiddenCount=a.hidden||0;show("vPlay");
- if(ses[idx]&&ses[idx].outcome){next();}else render(true);})();
+var ICON={nl:"📏",word:"📖",seder:"🧮",col:"➕",miss:"❓",mul:"✖️",fpic:"🍕",fnl:"📐",fcmp:"⚖️",fword:"📝",fops:"🍰",geo:"🔷",chart:"📊"};
+$("tGrid").innerHTML=["fops"].concat(M.TOPICS.filter(function(t){return t!=="fops";})).map(function(t){return '<button class="tbtn'+(t==="fops"?" new":"")+'" data-t="'+t+'">'+ICON[t]+" "+M.LABELS[t]+(t==="fops"?"<small>חדש ✨</small>":"")+"</button>";}).join("");
+[].forEach.call(document.querySelectorAll(".tbtn"),function(b){b.onclick=function(){start("practice",b.dataset.t);};});
+$("bAll").onclick=function(){var q=cur();if(q)tPause(q);persist();flush();home();};
+$("bResume").onclick=resume;home();
+function resume(){var a=db.active;if(!a||!a.ses){home();return;}only=a.only||null;ses=a.ses;ses.forEach(norm);idx=a.idx;mode=a.mode;sesId=a.id;sesStars=a.stars||0;brk=a.brk||{};hiddenCount=a.hidden||0;show("vPlay");
+ if(ses[idx]&&ses[idx].outcome){next();}else render(true);}
 </script></body></html>

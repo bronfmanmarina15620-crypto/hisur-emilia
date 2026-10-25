@@ -165,6 +165,8 @@ function weights(stats){var w={};TOPICS.forEach(function(t){var s=stats&&stats[t
 function pickW(w){var tot=0,k;for(k in w)tot+=w[k];var r=Math.random()*tot;for(k in w){r-=w[k];if(r<=0)return k;}return TOPICS[0];}
 // opts: {n, stats, counts (items ever per topic), review:[items], prevKeys, test}
 function session(o){o=o||{};var n=o.n||10,seen={},out=[],i;
+ if(o.only){(o.prevKeys||[]).forEach(function(k){seen[k]=1;});(o.review||[]).filter(function(it){return it.topic===o.only;}).slice(0,2).forEach(function(it){var c=JSON.parse(JSON.stringify(it));c.review=true;seen[c.key]=1;out.push(c);});
+  for(i=0;out.length<n&&i<n*3;i++){var x=make(o.only,seen);if(x)out.push(x);else seen={};}return out.slice(0,n);}
  (o.prevKeys||[]).forEach(function(k){seen[k]=1;});
  if(!o.test)(o.review||[]).slice(0,3).forEach(function(it){var c=JSON.parse(JSON.stringify(it));c.review=true;delete seen[c.key];if(!seen[c.key]){seen[c.key]=1;out.push(c);}});
  var w=weights(o.stats);
