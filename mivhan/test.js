@@ -29,6 +29,17 @@ function chk(x){
   else e=e.replace('□',v.fields[0].want);
   const [l,r]=e.split(' = ');a(Math.abs(ev2(l)-ev2(r))<1e-9,e);a(!x.guide.join(' ').includes(' = '+x.ans+' ')||true);}
  if(t==='fword')a(!(x.prompt.match(/\{[^}]+\}/g)||[]).some(f=>!/^\{\d+\/\d+\}$/.test(f)));
+ const fv=f=>{const m=f.match(/^(\d+)\/(\d+)$/);return m?+m[1]/+m[2]:+f.replace(/,/g,'');};
+ const evx=str=>{const p=str.trim().split(/ ([+−×:]) /);let r=fv(p[0]);for(let i=1;i<p.length;i+=2){const y=fv(p[i+1]),o=p[i];r=o==='+'?r+y:o==='−'?r-y:o==='×'?r*y:r/y;}return r;};
+ if(['fexp','wmin','comp1','ineq','zero1','round','poly','terms'].includes(t)){a(x.guide&&x.guide.length>=2,t);a(M.LABELS[t]&&M.HINTS[t]);}
+ if(t==='fexp'){if(v.t==='frac'){a(v.exact);const [p,q]=x.expr.match(/\d+/g).map(Number);a(Math.abs(p/q-v.want[0]/v.want[1])<1e-9);}else{const parts=x.expr.split(' = ').map(z=>z.replace('□',v.fields[0].want));const vals=parts.map(fv);a(vals.every(z=>Math.abs(z-vals[0])<1e-9),x.expr);}}
+ if(t==='wmin'){const [W,n,d]=x.expr.match(/\d+/g).map(Number);a(Math.abs(W-n/d-(v.fields[0].want+v.fields[1].want/d))<1e-9);a(v.fields[1].want>0&&v.fields[1].want<d);}
+ if(t==='comp1'){if(v.t==='frac')a(Math.abs(v.want[0]/v.want[1]+(x.expr?fv(x.expr.split(' ')[0]):fv(x.prompt.match(/\{(\d+\/\d+)\}/)[1]))-1)<1e-9);else{const [p,q,d]=x.expr.match(/\d+/g).map(Number);a.strictEqual(p/q+v.fields[0].want/d,1);}}
+ if(t==='ineq'){const [l,r]=x.expr.split(' □ ');const d=evx(l)-evx(r);a.strictEqual(v.opts[v.ans],Math.abs(d)<1e-9?'=':d<0?'<':'>',x.expr);}
+ if(t==='zero1'){if(v.t==='fields'){const [l,r]=x.expr.replace('__',v.fields[0].want).split(' = ');a(Math.abs(evx(l)-evx(r))<1e-9,x.expr);}else a(/: 0/.test(v.opts[v.ans]+x.prompt));}
+ if(t==='round'){if(x.sub==='r')a.strictEqual(evx(x.expr.replace(/ =$/,'')),x.ans);else{const [l,r]=x.expr.replace('__',x.ans).split(' = ');a.strictEqual(evx(l),evx(r));}}
+ if(t==='poly'){const n=x.geo?x.geo.pts.length:0;if(x.sub==='diag')a.strictEqual(x.ans,n*(n-3)/2);if(x.sub==='isdiag'||x.sub==='isside'){const L=x.geo.labels,ix=s=>[L.indexOf(s[0]),L.indexOf(s[1])],isSide=s=>{const [i,j]=ix(s);return (Math.abs(i-j)===1||Math.abs(i-j)===n-1);};const good=v.opts.filter(o=>x.sub==='isside'?isSide(o):!isSide(o));a.deepStrictEqual(good,[v.opts[v.ans]],JSON.stringify(v));}}
+ if(t==='terms'&&x.tv){const [k,p,q]=x.tv;a.strictEqual([p+q,p-q,p*q,p/q][k],x.ans);}
  if(t==='chart'){const C=x.chart;a(C.vals.every(z=>z%C.step===0&&z>0));if(v.t==='choice'){const m=x.prompt.includes('הרבה')?Math.max(...C.vals):Math.min(...C.vals);a.strictEqual(C.vals[v.ans],m);}}
  if(t==='geo'){const P=x.geo.pts,k=P.length,s=x.geo.hl,sel=v.ans.map(i=>v.opts[i]);const nm=i=>x.geo.labels[i]+x.geo.labels[(i+1)%k];
   if(x.sub==='adj')a.deepStrictEqual(sel.sort(),[nm((s+1)%k),nm((s+k-1)%k)].sort());
@@ -39,11 +50,11 @@ for(let i=0;i<600;i++){const test=i%7==0;const s=M.session({n:test?8:10,stats:i%
  for(const x of s){n++;cnt[x.topic]=(cnt[x.topic]||0)+1;chk(x);}
  if(prev.length)a.notDeepStrictEqual(s.map(x=>x.key),prev);prev=s.map(x=>x.key);}
 for(const t of M.TOPICS)for(let i=0;i<300;i++){const x=M.make(t,{});chk(x);}
-a.strictEqual(M.TOPICS.length,13);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
+a.strictEqual(M.TOPICS.length,21);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
 // weak weighting (13 topics: uniform≈0.08)
 const good={n:10,tries:10,help:0,first:10};const st={};M.TOPICS.forEach(t=>st[t]=good);st.fcmp={n:10,tries:28,help:4,first:1};
 let w=0,tot=0;for(let i=0;i<200;i++){const s=M.session({stats:st,counts:ALL});w+=s.filter(x=>x.topic==='fcmp').length;tot+=s.length;}
-a(w/tot>0.2,'weak '+w/tot);
+a(w/tot>0.15,'weak '+w/tot);
 // new topic block: old topics done -> first new topic in a block of 4
 const s0=M.session({counts:OLD});a.deepStrictEqual(s0.slice(0,4).map(x=>x.topic),['mul','mul','mul','mul']);
 const rv=M.session({review:[{topic:'seder',key:'X1',ans:3,expr:'1 + 2 =',stages:[{t:'fields',fields:[{lab:'',want:3}]}]}],counts:ALL});a(rv[0].review&&rv[0].key==='X1');

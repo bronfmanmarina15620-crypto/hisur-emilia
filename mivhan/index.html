@@ -60,7 +60,7 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <h2 style="margin:14px 4px 4px">במה מתאמנות היום?</h2>
  <div class="tgrid" id="tGrid"></div>
  <div class="card"><h2 style="margin:0 0 6px">יוצאות לאימון 💜</h2>
- <div class="muted">13 נושאים: מספרים, סדר פעולות, כפל, שברים, הנדסה ודיאגרמות. כל תרגיל הוא שלב, וכל שלב מביא כוכבים.</div>
+ <div class="muted">21 נושאים: מספרים, סדר פעולות, כפל, שברים, הנדסה ודיאגרמות. כל תרגיל הוא שלב, וכל שלב מביא כוכבים.</div>
  <div class="stars" id="starLine" style="margin-top:8px"></div><div class="rw hidden" id="rwLine"></div>
  <label class="tog"><input type="checkbox" id="tTimer"> שעון רגוע (מראה כמה זמן תרגלת)</label></div>
  <button class="btn" id="bStart">🔀 תרגול מעורב · 10 שלבים מכל הנושאים</button>
@@ -111,10 +111,10 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <div id="brTxt" style="font-size:17px">10 קפיצות במקום, 5 סיבובי ידיים, ולשתות מים.</div><div class="big hidden" id="brCnt">45</div>
  <button class="btn" id="bBrGo">יאללה, זזות!</button><button class="btn light" id="bBrSkip">דלגי, ממשיכות</button></div></div>
 
-<script src="../seder/engine.js?v=2026-10-25c"></script>
-<script src="engine.js?v=2026-10-25c"></script>
+<script src="../seder/engine.js?v=2026-10-29a"></script>
+<script src="engine.js?v=2026-10-29a"></script>
 <script>
-var APPVER="2026-10-25c",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=180000,M=Mivhan,S=Seder;
+var APPVER="2026-10-29a",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=180000,M=Mivhan,S=Seder;
 var $=function(i){return document.getElementById(i);};
 function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.hist)return d;}catch(e){}return {hist:[],review:[],stars:0,counts:{},last:[],reward:null,settings:{}};}
 var db=load();db.review=db.review||[];db.counts=db.counts||{};db.settings=db.settings||{};db.stars=db.stars||0;
@@ -129,8 +129,8 @@ function itemText(it){if(it.topic==="col")return S.fmt(it.col.a)+" "+it.col.op+"
  if(it.fnl)return (it.fnl.mode==="read"?"קריאת שבר על ישר ":"מיקום "+it.expr+" על ישר ")+"0–"+it.fnl.u;
  if(it.pic)return "איזה חלק צבוע (ציור עם "+it.pic.sh.length+" חלקים)";
  if(it.chart)return it.prompt+" (דיאגרמה)";
- if(it.topic==="fword"||it.topic==="geo")return it.prompt.replace(/[{}]/g,"");return it.expr;}
-function itemMath(it){return it.topic==="col"?S.fmt(it.col.a)+" "+it.col.op+" "+S.fmt(it.col.b):(["seder","miss","mul","fops","fcmp"].indexOf(it.topic)>=0)?it.expr:"";}
+ if(it.topic==="fword"||it.topic==="geo"||!it.expr)return (it.prompt||"").replace(/[{}]/g,"");return it.expr;}
+function itemMath(it){return it.topic==="col"?S.fmt(it.col.a)+" "+it.col.op+" "+S.fmt(it.col.b):(["seder","miss","mul","fops","fcmp","fexp","wmin","comp1","ineq","zero1","round"].indexOf(it.topic)>=0)?it.expr:"";}
 function norm(q){if(!q.stages)q.stages=[q.topic==="nl"&&q.sub==="place"?{t:"tick",ans:q.ans}:{t:"fields",fields:[{lab:"",want:q.ans}]}];return q;}
 // ---------- timer (active time only)
 function vis(){return document.visibilityState!=="hidden";}
@@ -238,7 +238,8 @@ function submit(){var q=ses[idx],st=stg(q);
  check(st.fields.map(function(f,i){return q.okf[i]?f.want:+inputs["f"+i];}),st.fields.map(function(f,i){return q.okf[i]?f.want:inputs["f"+i];}).join("|"));}
 function renderAct(){[].forEach.call(document.querySelectorAll("[data-b]"),function(x){x.classList.toggle("act",x.dataset.b===box);});}
 var ENC=["כמעט! ","עוד ניסיון אחד – את יכולה! "];
-function judge(q,st,v){if(st.pair){var okp=M.pairOk(st.pair,v[0],v[1]);q.bad=okp?-1:0;if(okp)st.fields.forEach(function(f,i){f.want=v[i];q.okf[i]=true;});return okp;}
+function judge(q,st,v){if(st.t==="frac"&&st.exact)return v[0]===st.want[0]&&v[1]===st.want[1];
+ if(st.pair){var okp=M.pairOk(st.pair,v[0],v[1]);q.bad=okp?-1:0;if(okp)st.fields.forEach(function(f,i){f.want=v[i];q.okf[i]=true;});return okp;}
  if(st.t==="frac")return v[1]>0&&v[0]*st.want[1]===v[1]*st.want[0];
  if(st.t==="choice")return v===st.ans;if(st.t==="multi")return JSON.stringify(v)===JSON.stringify(st.ans.slice().sort());if(st.t==="tick")return v===st.ans;
  if(st.fields.length===1)return (Array.isArray(v)?v[0]:v)===st.fields[0].want;
@@ -367,8 +368,9 @@ function renderParent(){var st=stats(),ks=Object.keys(st),sc=function(k){var o=s
 $("bRw").onclick=function(){var g=parseInt($("rwGoal").value,10);db.reward=g>0?{goal:g,text:$("rwText").value.trim()}:null;save();schedPush();$("rwMsg").textContent="נשמר ✓ · סה״כ כוכבים: "+db.stars;};
 // resume
 setTimeout(function(){cloudSync(true);},300);
-var ICON={nl:"📏",word:"📖",seder:"🧮",col:"➕",miss:"❓",mul:"✖️",fpic:"🍕",fnl:"📐",fcmp:"⚖️",fword:"📝",fops:"🍰",geo:"🔷",chart:"📊"};
-$("tGrid").innerHTML=["fops"].concat(M.TOPICS.filter(function(t){return t!=="fops";})).map(function(t){return '<button class="tbtn'+(t==="fops"?" new":"")+'" data-t="'+t+'">'+ICON[t]+" "+M.LABELS[t]+(t==="fops"?"<small>חדש ✨</small>":"")+"</button>";}).join("");
+var ICON={nl:"📏",word:"📖",seder:"🧮",col:"➕",miss:"❓",mul:"✖️",fpic:"🍕",fnl:"📐",fcmp:"⚖️",fword:"📝",fops:"🍰",geo:"🔷",chart:"📊",fexp:"🔁",wmin:"✂️",comp1:"🧩",ineq:"🐊",zero1:"0️⃣",round:"🔟",poly:"⬠",terms:"🏷️"};
+var NEWT=["fexp","wmin","comp1","ineq","zero1","round","poly","terms"],FIRST=["fops"].concat(NEWT);
+$("tGrid").innerHTML=FIRST.concat(M.TOPICS.filter(function(t){return FIRST.indexOf(t)<0;})).map(function(t){var nw=FIRST.indexOf(t)>=0;return '<button class="tbtn'+(nw?" new":"")+'" data-t="'+t+'">'+ICON[t]+" "+M.LABELS[t]+(NEWT.indexOf(t)>=0?"<small>חדש ✨</small>":"")+"</button>";}).join("");
 [].forEach.call(document.querySelectorAll(".tbtn"),function(b){b.onclick=function(){start("practice",b.dataset.t);};});
 $("bAll").onclick=function(){var q=cur();if(q)tPause(q);persist();flush();home();};
 $("bResume").onclick=resume;home();

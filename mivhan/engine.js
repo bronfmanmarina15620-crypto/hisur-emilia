@@ -3,8 +3,8 @@ var S=(typeof module!=="undefined")?require("../seder/engine.js"):root.Seder;
 var R=function(a,b){return a+Math.floor(Math.random()*(b-a+1));};
 var P=function(a){return a[Math.floor(Math.random()*a.length)];};
 var fmt=S.fmt;
-var TOPICS=["nl","word","seder","col","miss","mul","fpic","fnl","fcmp","fword","fops","geo","chart"];
-var LABELS={nl:"ישר המספרים",word:"שאלות מילוליות",seder:"סדר פעולות",col:"חיבור וחיסור במאונך",miss:"מספר חסר",mul:"כפל דו־ספרתי",fpic:"שברים בציור ובמילים",fnl:"שברים על ישר",fcmp:"השוואת שברים",fword:"שאלות עם שברים",fops:"חיבור וחיסור שברים",geo:"צלעות מקבילות וסמוכות",chart:"דיאגרמות"};
+var TOPICS=["nl","word","seder","col","miss","mul","fpic","fnl","fcmp","fword","fops","geo","chart","fexp","wmin","comp1","ineq","zero1","round","poly","terms"];
+var LABELS={nl:"ישר המספרים",word:"שאלות מילוליות",seder:"סדר פעולות",col:"חיבור וחיסור במאונך",miss:"מספר חסר",mul:"כפל דו־ספרתי",fpic:"שברים בציור ובמילים",fnl:"שברים על ישר",fcmp:"השוואת שברים",fword:"שאלות עם שברים",fops:"חיבור וחיסור שברים",geo:"צלעות מקבילות וסמוכות",chart:"דיאגרמות",fexp:"הרחבה וצמצום שברים",wmin:"שלם פחות שבר",comp1:"השלמה לשלם",ineq:"אי־שוויונות (גדול, קטן, שווה)",zero1:"תכונות האפס והאחד",round:"כפל מספרים עגולים",poly:"מצולעים ואלכסונים",terms:"סכום, הפרש, מכפלה, מנה"};
 var HINTS={
  nl:["כמה קפיצות יש בין שני המספרים הכתובים? חלקי כדי לגלות כמה שווה כל קפיצה.","התחילי מהמספר הכתוב הקרוב, וספרי קפיצות עד הנקודה."],
  word:["סמני את המספרים ואת המילה שקובעת איזו פעולה לעשות.","כתבי את החישוב הראשון בתיבת הביניים. האם התשובה הגיונית?"],
@@ -18,6 +18,14 @@ var HINTS={
  fops:["אם המכנים שונים – קודם מוצאים מכנה משותף וממירים. אחר כך מחברים או מחסרים רק את המונים.","בדקי: המכנה המשותף נכון? ההמרה נכונה? אפשר גם לכתוב שבר שווה – למשל 2/4 במקום 1/2."],
  geo:["צלעות מקבילות לא נפגשות לעולם, גם אם ממשיכים אותן.","צלעות סמוכות נוגעות זו בזו בקודקוד משותף."],
  chart:["קראי את הכותרת ואת המקרא לפני שמתחילות.","עקבי עם האצבע מראש העמודה אל המספרים בצד."],
+ fexp:["הרחבה: כופלים מונה ומכנה באותו מספר. צמצום: מחלקים את שניהם באותו מספר.","בדקי: עשית אותו דבר למעלה ולמטה?"],
+ wmin:["מפרקים שלם אחד לשבר עם אותו מכנה.","בדקי: כמה שלמים נשארו? וכמה חלקים?"],
+ comp1:["שלם = כל החלקים (מונה שווה למכנה).","בדקי: כמה חלקים חסרים עד המכנה?"],
+ ineq:["חשבי או השווי כל צד לבד.","< קטן מ, > גדול מ. הפה של הסימן פתוח לצד הגדול."],
+ zero1:["כפל ב־0 = 0. כפל או חילוק ב־1 – המספר לא משתנה.","אסור לחלק ב־0!"],
+ round:["מסתירים את האפסים, כופלים, ומחזירים את כל האפסים.","ספרי שוב את האפסים."],
+ poly:["אלכסון מחבר קודקודים שאינם שכנים.","ספרי בציור."],
+ terms:["סכום – חיבור, הפרש – חיסור, מכפלה – כפל, מנה – חילוק.","בדקי את החישוב."],
  miss:["נסי להציב את המספר שלך ובדקי אם יוצא נכון.","איזו פעולה הפוכה תעזור למצוא את המספר החסר?"]};
 // ---- number line
 var STEPS=[100,500,1000,2000,5000,10000,20000,25000,50000,100000,250000];
@@ -158,7 +166,86 @@ function mkChart(){var ci=R(0,2),cats=CATS[ci].slice().sort(function(){return Ma
  else{txt="כמה ילדים בחרו בסך הכול?";st=numStage(vals.reduce(function(a,b){return a+b;},0));}
  var ans=st.t==="choice"?cats[st.ans]:st.fields[0].want;
  return {topic:"chart",sub:kind+q,prompt:txt,chart:{kind:kind,cats:cats,vals:vals,step:step,title:TITLES[ci]},ans:ans,stages:[st],key:"ch"+kind+cats+vals+q+i+j};}
-var MK={mul:mkMul,fpic:mkFpic,fnl:mkFnl,fcmp:mkFcmp,fword:mkFword,fops:mkFops,geo:mkGeo,chart:mkChart,nl:mkNL,word:mkWord,seder:mkSeder,col:mkCol,miss:mkMiss};
+// ======== v3 topics (29.10) ========
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function choiceSt(opts,right,ltr){var o=shuf(opts);return {t:"choice",opts:o,ans:o.indexOf(right),ltr:!!ltr};}
+// expand / reduce fractions (worksheet הרחבה וצמצום)
+function mkFexp(){var k=R(0,4),q=R(2,12),p=R(1,q+2),m=R(2,8),e,st,pr,G;if(gcd(p,q)!==1)return null;
+ if(k===0){pr="הרחיבי את השבר פי "+m+":";e=fr(p,q)+" =";st={t:"frac",want:[p*m,q*m],exact:true};G=["הרחבה: כופלים את המונה ואת המכנה באותו מספר – "+m+".",p+" × "+m+" = ? (המונה)",q+" × "+m+" = ? (המכנה)"];}
+ else if(k===1){pr="צמצמי את השבר ב־"+m+":";e=fr(p*m,q*m)+" =";st={t:"frac",want:[p,q],exact:true};G=["צמצום: מחלקים את המונה ואת המכנה באותו מספר – "+m+".",(p*m)+" : "+m+" = ? (המונה)",(q*m)+" : "+m+" = ? (המכנה)"];}
+ else if(k===2){var top=Math.random()<.5;pr="איזה מספר חסר כדי שהשברים יהיו שווים?";e=fr(p,q)+" = "+(top?"□/"+q*m:p*m+"/□");st=numStage(top?p*m:q*m);
+  G=[top?"במכנה: "+q+" הפך ל־"+(q*m)+". בכמה כפלו?":"במונה: "+p+" הפך ל־"+(p*m)+". בכמה כפלו?","את אותו מספר כופלים גם "+(top?"במונה.":"במכנה."),"בודקות: הרחבה – כופלים למעלה ולמטה באותו מספר."];}
+ else if(k===3){var a=R(2,5),b=R(2,5);if(a===b)return null;pr="חשבי בדרך חכמה: איזה מספר חסר?";e=fr(p*a,q*a)+" = □/"+q*b;st=numStage(p*b);
+  G=["קודם צמצמי את "+fr(p*a,q*a)+" ב־"+a+".","עכשיו הרחיבי את השבר שקיבלת כך שהמכנה יהיה "+(q*b)+".","בודקות שהשברים שווים."];}
+ else{var red=Math.random()<.5,ks=[1,2,3,4,5].map(function(x){return x*R(1,2);});ks=ks.filter(function(x,i){return ks.indexOf(x)===i;}).sort(function(x,y){return x-y;});if(ks.length<4)return null;if(red)ks.reverse();
+  var h=R(1,ks.length-1),parts=ks.map(function(x,i){return i===h?(Math.random()<.5?"□/"+q*x:p*x+"/□"):fr(p*x,q*x);});var wantTop=parts[h][0]==="□";
+  pr="רכבת שברים: השלימי את המספר החסר כך שכל השברים יהיו שווים ("+(red?"צמצום":"הרחבה")+").";e=parts.join(" = ");st=numStage(wantTop?p*ks[h]:q*ks[h]);
+  G=["מצאי את השבר הכי פשוט ברכבת – "+fr(p,q)+"?","בכל קרון כופלים את המונה ואת המכנה באותו מספר.","בודקות: השבר בקרון שלך שווה לשכנים שלו?"];k="t";}
+ return {topic:"fexp",sub:"k"+k,prompt:pr,expr:e,ans:st.t==="frac"?fr(st.want[0],st.want[1]):st.fields[0].want,stages:[st],guide:G,key:"fx"+k+e};}
+// whole minus fraction (3 − 4/8)
+function mkWmin(){var W=R(2,5),d=R(2,12),a=R(1,d-1),e=W+" − "+fr(a,d)+" =";
+ var st={t:"fields",fields:[{lab:"שלמים",want:W-1},{lab:"□/"+d,want:d-a}]};
+ return {topic:"wmin",sub:"w"+W,prompt:"כתבי את התשובה כמספר מעורב (שלמים ושבר):",expr:e,ans:(W-1)+" "+fr(d-a,d),stages:[st],key:"wm"+e,
+  guide:["מפרקות שלם אחד: "+W+" = "+(W-1)+" + 1.","את ה־1 כותבות כשבר: 1 = "+fr(d,d)+".","עכשיו "+fr(d,d)+" − "+fr(a,d)+", ו־"+(W-1)+" השלמים נשארים."]};}
+// complete to a whole
+var FOOD=[["פיצה","משולשים","שווים"],["עוגה","פרוסות","שוות"],["חפיסת שוקולד","קוביות","שוות"],["פשטידה","חתיכות","שוות"]];
+function mkComp1(){var d=R(2,12),a=R(1,d-1),k=R(0,2),e,pr,st;
+ if(k===0){pr="כמה חסר כדי להשלים לשלם?";e=fr(a,d)+" + __ = 1";st={t:"frac",want:[d-a,d],whole:false};}
+ else if(k===1){pr="איזה מספר חסר בריבוע?";e=fr(a,d)+" + □/"+d+" = 1";st=numStage(d-a);}
+ else{var f=P(FOOD);pr=f[0]+" חולקה ל־"+d+" "+f[1]+" "+f[2]+". אכלו {"+a+"/"+d+"} מה"+f[0]+". איזה חלק מה"+f[0]+" נשאר?";e="";st={t:"frac",want:[d-a,d]};}
+ return {topic:"comp1",sub:"c"+k,prompt:pr,expr:e,ans:fr(d-a,d),stages:[st],key:"c1"+k+a+"/"+d,
+  guide:["שלם אחד = "+fr(d,d)+" (כל החלקים).","כמה חלקים כבר יש? "+a+". כמה חסרים עד "+d+"?","בודקות: מחברים – יוצא "+fr(d,d)+" = 1?"]};}
+// inequalities
+function cmpSign(x,y){return x<y?"<":x>y?">":"=";}
+function mkIneq(){var k=R(0,4),L,Rr,lv,rv,G;
+ if(k===0){var a=R(1000,9999),b=R(10,99),c=b+P([100,10,-10,0]);if(c<=0)return null;var op=Math.random()<.5?"−":"+";L=fmt(a)+" "+op+" "+b;Rr=fmt(a)+" "+op+" "+c;lv=op==="+"?a+b:a-b;rv=op==="+"?a+c:a-c;
+  G=["המספר הראשון זהה בשני הצדדים. הסתכלי רק על המספר השני.",op==="−"?"בחיסור: מורידים יותר → נשאר פחות.":"בחיבור: מוסיפים יותר → יוצא יותר.","אפשר לחשב בלי לחשב הכול!"];}
+ else if(k===1){var x=R(100,900),y=R(100,900),dd=R(1,30)*P([1,-1]),t=P([0,0,R(1,9)]);L=x+" + "+y;var y2=y+dd+t*P([1,-1]);Rr=(x-dd)+" + "+y2;lv=x+y;rv=x-dd+y2;
+  G=["כמה הורידו מהמספר הראשון? כמה הוסיפו לשני?","אם מורידים ומוסיפים אותו דבר – הסכום לא משתנה.","השוו את השינויים."];}
+ else if(k===2){var n=R(2,15),ops=[[n+" + 0",n],[n+" − 0",n],[n+" × 0",0],[n+" × 1",n],[n+" : 1",n],[n+" : "+n,1],["0 : "+n,0],[n+" + 1",n+1],[n+" − 1",n-1]];var A=P(ops),B=P(ops);if(A===B)return null;L=A[0];Rr=B[0];lv=A[1];rv=B[1];
+  G=["כפל ב־0 נותן 0. כפל או חילוק ב־1 לא משנה את המספר.","מספר חלקי עצמו = 1. 0 חלקי מספר = 0.","חשבי כל צד לבד ואז השווי."];}
+ else if(k===3){var d=R(2,10),p=R(1,d-1),m=R(2,4),q=p*m+P([0,0,1,-1]);if(q<=0)return null;L=fr(p,d);Rr=fr(q,d*m);lv=p*d*m;rv=q*d;
+  G=["הרחיבי את "+fr(p,d)+" פי "+m+" כך שהמכנה יהיה "+(d*m)+".","עכשיו המכנים שווים – משווים את המונים.","זוכרות: שברים שווים מקבלים ="];}
+ else{var d2=R(2,12),p2=R(1,2*d2);if(p2===d2&&Math.random()<.5)p2++;L=fr(p2,d2);Rr="1";lv=p2;rv=d2;G=["1 שלם = "+fr(d2,d2)+".","השווי את המונה "+p2+" למכנה "+d2+".","מונה גדול מהמכנה → השבר גדול מ־1."];}
+ var s=cmpSign(lv,rv),e=L+" □ "+Rr;
+ return {topic:"ineq",sub:"i"+k,prompt:"מה מתאים בריבוע: < , > או = ?",expr:e,ans:s,stages:[{t:"choice",opts:["<",">","="],ans:["<",">","="].indexOf(s),ltr:true}],guide:G,key:"iq"+e,cmp:[lv,rv]};}
+// properties of 0 and 1
+function mkZero1(){var n=R(2,99),k=R(0,8),e,a,G=["כפל ב־0 תמיד 0. חיבור או חיסור של 0 לא משנים את המספר.","כפל או חילוק ב־1 לא משנים את המספר. מספר חלקי עצמו = 1.","אסור לחלק ב־0 – אין לזה משמעות!"];
+ if(k===7)return {topic:"zero1",sub:"none",prompt:"איזה תרגיל הוא חסר משמעות?",expr:"",ans:n+" : 0",stages:[choiceSt([n+" × 1 = "+n,"0 : "+n+" = 0",n+" : 0",n+" : 1 = "+n],n+" : 0",true)],guide:G,key:"z1n"+n};
+ if(k===8)return {topic:"zero1",sub:"div0",prompt:"כמה זה "+n+" : 0 ?",expr:"",ans:"אין משמעות",stages:[choiceSt(["0",String(n),"1","אין משמעות – אסור לחלק ב־0"],"אין משמעות – אסור לחלק ב־0")],guide:G,key:"z1d"+n};
+ var F=[[n+" − 0 = __",n],[n+" × 0 = __",0],[n+" : 1 = __",n],["0 : "+n+" = __",0],["__ × "+n+" = 0",0],[n+" : __ = 1",n],["__ : 1 = "+n,n],[n+" + __ = "+n,0],[n+" − __ = 0",n],["0 : "+n+" = 0 + __",0],[n+" × __ = "+n,1]];
+ var f=F[k===0?R(0,F.length-1):k%F.length];if(Math.random()<.5)f=P(F);e=f[0];a=f[1];
+ return {topic:"zero1",sub:"m",prompt:"איזה מספר חסר?",expr:e,ans:a,stages:[numStage(a)],guide:G,key:"z1"+e};}
+// multiply round numbers
+function mkRound(){var k=R(0,3);
+ if(k<3){var a=R(2,12),b=R(2,9),p=R(1,3),q=R(0,2);if(p+q>5)return null;var A=a*Math.pow(10,p),B=b*Math.pow(10,q);if(Math.random()<.5){var t=A;A=B;B=t;}
+  return {topic:"round",sub:"r",prompt:"כמה יוצא?",expr:fmt(A)+" × "+fmt(B)+" =",ans:A*B,stages:[numStage(A*B)],key:"rn"+A+"*"+B,
+   guide:["מסתירות את האפסים: "+a+" × "+b+" = ?","סופרות כמה אפסים הסתרנו בשני המספרים יחד.","מוסיפות את כל האפסים בסוף התשובה."]};}
+ var a2=R(2,9),c=P([2,3,4,5,10,20]),x=P([2,4,5,10,20,25]),B2=c*x,e2=a2+" × "+B2+" = "+a2+" × __ × "+c;
+ return {topic:"round",sub:"split",prompt:"השלימי כך שיתקבל שוויון:",expr:e2,ans:x,stages:[numStage(x)],key:"rs"+e2,
+  guide:["בצד שמאל כופלים ב־"+B2+". בצד ימין כבר יש "+c+".","איזה מספר כפול "+c+" נותן "+B2+"?","בודקות: __ × "+c+" צריך להיות "+B2+"."]};}
+// polygons & diagonals
+var PN={3:"משולש",4:"מרובע",5:"מחומש",6:"משושה",7:"משובע",8:"מתומן"},HL8=["א","ב","ג","ד","ה","ו","ז","ח"];
+function regPts(n){var p=[];for(var i=0;i<n;i++){var a=-Math.PI/2-2*Math.PI*i/n;p.push([Math.round(180+85*Math.cos(a)),Math.round(105+85*Math.sin(a))]);}return p;}
+function mkPoly(){var n=R(3,8),k=R(0,3),G=["אלכסון מחבר שני קודקודים שאינם שכנים. צלע מחברת קודקודים שכנים.","ספרי את הקודקודים במצולע.","בדקי שוב בציור."];
+ if(k===0)return {topic:"poly",sub:"sides",prompt:"כמה צלעות יש ל"+PN[n]+"?",expr:"",ans:n,stages:[numStage(n)],guide:["משולש – 3, מרובע – 4… השם רומז על המספר!","מחומש – חמש, משושה – שש.","ספרי בציור אם צריך."],key:"pl0"+n};
+ if(k===1){var dg=n*(n-3)/2;return {topic:"poly",sub:"diag",prompt:"כמה אלכסונים יש ב"+PN[n]+"? (אפשר לספור בציור)",expr:"",geo:{pts:regPts(n),labels:HL8.slice(0,n),hl:-1},ans:dg,stages:[numStage(dg)],guide:["מכל קודקוד יוצאים אלכסונים לכל הקודקודים חוץ ממנו ומשני השכנים שלו.","מכל קודקוד: "+n+" − 3 = "+(n-3)+" אלכסונים.","כל אלכסון נספר פעמיים (משני הקצוות) – אז מחלקים ב־2."],key:"pl1"+n};}
+ if(n<4)n=R(4,8);var L=HL8.slice(0,n),i=R(0,n-1),side=L[i]+L[(i+1)%n],j=R(2,n-2),diag=L[i]+L[(i+j)%n];
+ var DG=[];for(var u=0;u<n;u++)for(var v=u+2;v<n;v++)if(!(u===0&&v===n-1))DG.push(L[u]+L[v]);DG=shuf(DG);var opts=k===2?[side,L[(i+2)%n]+L[(i+3)%n],diag]:[side].concat(DG.slice(0,2));
+ if(new Set(opts).size<3)return null;
+ return {topic:"poly",sub:k===2?"isdiag":"isside",prompt:"ב"+PN[n]+" "+L.join("")+" – איזה קטע הוא "+(k===2?"אלכסון":"צלע")+"?",expr:"",geo:{pts:regPts(n),labels:L,hl:-1},ans:k===2?diag:side,
+  stages:[choiceSt(opts,k===2?diag:side)],guide:G,key:"pl"+k+n+i+j};}
+// sum / difference / product / quotient
+function mkTerms(){var k=R(0,4),a,b,ans,txt,G;
+ if(k===4){var w=P([["חיבור","סכום"],["חיסור","הפרש"],["כפל","מכפלה"],["חילוק","מנה"]]);return {topic:"terms",sub:"name",prompt:"איך קוראים לתוצאה של תרגיל "+w[0]+"?",expr:"",ans:w[1],stages:[choiceSt(["סכום","הפרש","מכפלה","מנה"],w[1])],key:"tm"+w[0],
+  guide:["חיבור → סכום, חיסור → הפרש.","כפל → מכפלה, חילוק → מנה.","נסי לזכור: סכום – כמו 'סך הכול'."]};}
+ if(k===0){a=R(100,9999);b=R(100,9999);ans=a+b;txt="מהו הסכום של "+fmt(a)+" ו־"+fmt(b)+"?";G=["סכום = תוצאה של חיבור.","כתבי "+fmt(a)+" + "+fmt(b)+" וחשבי."];}
+ else if(k===1){a=R(1000,30000);b=R(100,a-100);ans=a-b;txt="מהו ההפרש בין "+fmt(a)+" ל־"+fmt(b)+"?";G=["הפרש = תוצאה של חיסור: הגדול פחות הקטן.","כתבי "+fmt(a)+" − "+fmt(b)+" וחשבי."];}
+ else if(k===2){a=R(2,9)*P([1,10,100]);b=R(2,9)*P([1,10]);ans=a*b;txt="מהי המכפלה של "+fmt(a)+" ב־"+fmt(b)+"?";G=["מכפלה = תוצאה של כפל.","כתבי "+fmt(a)+" × "+fmt(b)+" וחשבי."];}
+ else{b=R(2,9)*P([1,10,100]);ans=R(2,12);a=b*ans;txt="מהי המנה של "+fmt(a)+" ב־"+fmt(b)+"?";G=["מנה = תוצאה של חילוק.","כתבי "+fmt(a)+" : "+fmt(b)+" וחשבי. אפשר להסתיר אפסים בשני המספרים."];}
+ G.push("בודקות שהתשובה הגיונית.");
+ return {topic:"terms",sub:"t"+k,prompt:txt,expr:"",ans:ans,stages:[numStage(ans)],guide:G,key:"tm"+k+a+"/"+b,tv:[k,a,b]};}
+var MK={fexp:mkFexp,wmin:mkWmin,comp1:mkComp1,ineq:mkIneq,zero1:mkZero1,round:mkRound,poly:mkPoly,terms:mkTerms,mul:mkMul,fpic:mkFpic,fnl:mkFnl,fcmp:mkFcmp,fword:mkFword,fops:mkFops,geo:mkGeo,chart:mkChart,nl:mkNL,word:mkWord,seder:mkSeder,col:mkCol,miss:mkMiss};
 function make(topic,seen){for(var g=0;g<300;g++){var it=MK[topic]();if(it&&!seen[it.key]){seen[it.key]=1;it.hints=HINTS[topic];if(!it.stages)it.stages=[topic==="nl"&&it.sub==="place"?{t:"tick",ans:it.ans}:numStage(it.ans)];return it;}}return null;}
 function weights(stats){var w={};TOPICS.forEach(function(t){var s=stats&&stats[t];var sc=1.2;
  if(s&&s.n>=3)sc=0.5+(s.tries/s.n-1)*1.5+s.help/s.n*3+(1-s.first/s.n)*1.5;w[t]=Math.max(.4,Math.min(4,sc));});return w;}
