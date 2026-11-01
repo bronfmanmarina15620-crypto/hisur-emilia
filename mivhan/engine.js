@@ -276,12 +276,27 @@ function mkPrime(){var k=R(0,2),G=["מספר ראשוני מתחלק רק ב־1 
  return {topic:"prime",sub:"divs",prompt:"סמני את כל המחלקים של "+N+":",expr:"",ans:dv.join(", "),stages:[{t:"multi",opts:op.map(String),ans:dv.map(function(x){return op.indexOf(x);}),ltr:true}],key:"pr2"+N,pv:N,
   guide:["מחלק = מספר ש־"+N+" מתחלק בו בלי שארית.","מחפשות זוגות: 1 × "+N+" , 2 × ? …","אל תשכחי את 1 ואת "+N+" עצמו."]};}
 var MK={divis:mkDivis,prime:mkPrime,fexp:mkFexp,wmin:mkWmin,comp1:mkComp1,ineq:mkIneq,zero1:mkZero1,round:mkRound,poly:mkPoly,terms:mkTerms,mul:mkMul,fpic:mkFpic,fnl:mkFnl,fcmp:mkFcmp,fword:mkFword,fops:mkFops,geo:mkGeo,chart:mkChart,nl:mkNL,word:mkWord,seder:mkSeder,col:mkCol,miss:mkMiss};
-function make(topic,seen){for(var g=0;g<300;g++){var it=MK[topic]();if(it&&!seen[it.key]){seen[it.key]=1;it.hints=HINTS[topic];if(!it.stages)it.stages=[topic==="nl"&&it.sub==="place"?{t:"tick",ans:it.ans}:numStage(it.ans)];return it;}}return null;}
+var EXAM=[["nl","nl",null,"מספרים גדולים על ישר המספרים"],["word","word",null,"שאלות מילוליות (חיבור, חיסור, כפל)"],["mul","mul",null,"כפל דו־ספרתי בדו־ספרתי"],["seder","seder",null,"סדר פעולות"],["col","col",null,"חיבור וחיסור במאונך"],["miss","miss",null,"משוואות: מספר חסר"],
+ ["fpic","fpic",null,"זיהוי שבר – במילים ובמספרים"],["fnl","fnl",null,"שברים על ישר המספרים"],["fcmp:r","fcmp","^c[23]$","השוואת שברים עם נימוק (חצי, שלם)"],["fword","fword",null,"שאלות מילוליות עם שברים"],
+ ["fops:same","fops","^same","חיבור וחיסור שברים – אותו מכנה"],["geo:par","geo","^par$","זיהוי צלעות מקבילות"],["geo:adj","geo","^adj$","זיהוי צלעות סמוכות"],["chart","chart",null,"דיאגרמות"]];
+function exEntry(id){for(var i=0;i<EXAM.length;i++)if(EXAM[i][0]===id&&id.indexOf(":")>0)return EXAM[i];return null;}
+function label(id){var e=exEntry(id);return e?e[3]:LABELS[id];}
+function subOk(it,re){return !re||new RegExp(re).test(it.sub);}
+function make(topic,seen,re){if(!MK[topic]){var e=exEntry(topic);if(!e)return null;topic=e[1];re=e[2];}
+ for(var g=0;g<400;g++){var it=MK[topic]();if(it&&subOk(it,re)&&!seen[it.key]){seen[it.key]=1;it.hints=HINTS[topic];if(!it.stages)it.stages=[topic==="nl"&&it.sub==="place"?{t:"tick",ans:it.ans}:numStage(it.ans)];return it;}}return null;}
 function weights(stats){var w={};TOPICS.forEach(function(t){var s=stats&&stats[t];var sc=1.2;
  if(s&&s.n>=3)sc=0.5+(s.tries/s.n-1)*1.5+s.help/s.n*3+(1-s.first/s.n)*1.5;w[t]=Math.max(.4,Math.min(4,sc));});return w;}
 function pickW(w){var tot=0,k;for(k in w)tot+=w[k];var r=Math.random()*tot;for(k in w){r-=w[k];if(r<=0)return k;}return TOPICS[0];}
 // opts: {n, stats, counts (items ever per topic), review:[items], prevKeys, test}
 function session(o){o=o||{};var n=o.n||10,seen={},out=[],i;
+ if(o.only&&exEntry(o.only)){var E=exEntry(o.only);(o.prevKeys||[]).forEach(function(k){seen[k]=1;});(o.review||[]).filter(function(it){return it.topic===E[1]&&subOk(it,E[2]);}).slice(0,2).forEach(function(it){var c=JSON.parse(JSON.stringify(it));c.review=true;seen[c.key]=1;out.push(c);});
+  for(i=0;out.length<n&&i<n*3;i++){var y=make(E[1],seen,E[2]);if(y)out.push(y);else seen={};}return out.slice(0,n);}
+ if(o.exam){var w0=weights(o.stats),last=null;(o.prevKeys||[]).forEach(function(k){seen[k]=1;});
+  if(!o.test)(o.review||[]).filter(function(it){return EXAM.some(function(e){return e[1]===it.topic&&subOk(it,e[2]);});}).slice(0,3).forEach(function(it){var c=JSON.parse(JSON.stringify(it));c.review=true;seen[c.key]=1;out.push(c);});
+  var pool=shuf(EXAM.slice());for(i=0;out.length<n&&i<200;i++){var ww={};EXAM.forEach(function(e,j){if(e[0]!==last)ww[j]=(w0[e[1]]||1)*(e[2]?0.6:1)*(0.5+Math.random());});
+   var j=+pickW(ww),e=EXAM[j];if(out.length<Math.min(n,EXAM.length)&&out.some(function(q){return q.ex===e[0];})){var un=pool.filter(function(p){return !out.some(function(q){return q.ex===p[0];})&&p[0]!==last;});if(un.length)e=un[0];}
+   var z=make(e[1],seen,e[2]);if(z){z.ex=e[0];out.push(z);last=e[0];}}
+  return out.slice(0,n);}
  if(o.only){(o.prevKeys||[]).forEach(function(k){seen[k]=1;});(o.review||[]).filter(function(it){return it.topic===o.only;}).slice(0,2).forEach(function(it){var c=JSON.parse(JSON.stringify(it));c.review=true;seen[c.key]=1;out.push(c);});
   for(i=0;out.length<n&&i<n*3;i++){var x=make(o.only,seen);if(x)out.push(x);else seen={};}return out.slice(0,n);}
  (o.prevKeys||[]).forEach(function(k){seen[k]=1;});
@@ -297,6 +312,6 @@ function session(o){o=o||{};var n=o.n||10,seen={},out=[],i;
  for(i=1;i<rest.length;i++){if(rest[i].topic===rest[i-1].topic){for(var j=i+1;j<rest.length;j++)if(rest[j].topic!==rest[i-1].topic){var tmp=rest[i];rest[i]=rest[j];rest[j]=tmp;break;}}}
  if(o.test){for(i=rest.length-1;i>0;i--){var r=Math.floor(Math.random()*(i+1));var t2=rest[i];rest[i]=rest[r];rest[r]=t2;}}
  return out.concat(rest).slice(0,n);}
-var api={isPrime:isPrime,pairOk:pairOk,words:words,REASONS:REASONS,gcd:gcd,session:session,make:make,TOPICS:TOPICS,LABELS:LABELS,HINTS:HINTS,fmt:fmt,S:S,weights:weights};
+var api={EXAM:EXAM,label:label,isPrime:isPrime,pairOk:pairOk,words:words,REASONS:REASONS,gcd:gcd,session:session,make:make,TOPICS:TOPICS,LABELS:LABELS,HINTS:HINTS,fmt:fmt,S:S,weights:weights};
 if(typeof module!=="undefined")module.exports=api;else root.Mivhan=api;
 })(this);

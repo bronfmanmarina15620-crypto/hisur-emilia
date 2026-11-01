@@ -67,3 +67,8 @@ const subs={};for(let i=0;i<3000;i++){const x=M.make('fops',{});subs[x.sub]=(sub
 for(let i=0;i<8;i++){const x=M.make('fops',{});console.log(x.expr,'->',x.ans);}
 for(const t of M.TOPICS){let pv=[];for(let k=0;k<20;k++){const s=M.session({only:t,prevKeys:pv,review:[{topic:'zz',key:'Z'}]});a.strictEqual(s.length,10,t);a(s.every(x=>x.topic===t),t);s.forEach(chk);pv=s.map(x=>x.key);}}
 console.log('topic sessions OK');
+a.strictEqual(M.EXAM.length,14);
+const exOk=x=>M.EXAM.some(e=>e[1]===x.topic&&(!e[2]||new RegExp(e[2]).test(x.sub)));
+{let pv=[];for(let i=0;i<300;i++){const test=i%3==0;const s=M.session({exam:true,test,n:test?8:10,prevKeys:pv,stats:{},review:[{topic:'divis',key:'R1',sub:'yn2'}]});a.strictEqual(s.length,test?8:10);a(s.every(exOk),JSON.stringify(s.map(x=>x.topic+x.sub)));a.strictEqual(new Set(s.map(x=>x.key)).size,s.length);s.forEach(chk);for(let k=1;k<s.length;k++)a(s[k].ex!==s[k-1].ex);pv=s.map(x=>x.key);}}
+for(const e of M.EXAM){let pv=[];for(let k=0;k<15;k++){const s=M.session({only:e[0],prevKeys:pv});a.strictEqual(s.length,10,e[0]);a(s.every(x=>x.topic===e[1]&&(!e[2]||new RegExp(e[2]).test(x.sub))),e[0]);s.forEach(chk);pv=s.map(x=>x.key);}a(M.label(e[0]));}
+console.log('focus topics OK');
