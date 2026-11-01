@@ -118,10 +118,10 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <div id="brTxt" style="font-size:17px">10 קפיצות במקום, 5 סיבובי ידיים, ולשתות מים.</div><div class="big hidden" id="brCnt">45</div>
  <button class="btn" id="bBrGo">יאללה, זזות!</button><button class="btn light" id="bBrSkip">דלגי, ממשיכות</button></div></div>
 
-<script src="../seder/engine.js?v=2026-11-01c"></script>
-<script src="engine.js?v=2026-11-01c"></script>
+<script src="../seder/engine.js?v=2026-11-01d"></script>
+<script src="engine.js?v=2026-11-01d"></script>
 <script>
-var APPVER="2026-11-01c",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=180000,M=Mivhan,S=Seder;
+var APPVER="2026-11-01d",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=180000,M=Mivhan,S=Seder;
 var $=function(i){return document.getElementById(i);};
 function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.hist)return d;}catch(e){}return {hist:[],review:[],stars:0,counts:{},last:[],reward:null,settings:{}};}
 var db=load();db.review=db.review||[];db.counts=db.counts||{};db.settings=db.settings||{};db.stars=db.stars||0;
@@ -386,7 +386,8 @@ function renderFail(){var rows=[];db.hist.forEach(function(r){(r.items||[]).forE
     (x.opts&&x.opts.length?"<div class='lr-meta'>האפשרויות: <span dir='auto'>"+x.opts.map(esc).join(" | ")+"</span></div>":"")+
     "<div class='lr-meta'>לא הצליחה · ניסיונות: "+(x.tries||3)+" · זמן: "+dur(ms(x))+(x.entries&&x.entries.length?" · ענתה: <span dir='auto'>"+x.entries.map(function(v){return esc(x.topic==="nl"&&x.sub==="place"&&typeof v==="number"?"שנתה "+v:fa(v));}).join(" ← ")+"</span>":"")+"</div>"+
     "<div class='lr-ok'>התשובה הנכונה: <span dir='auto'>"+esc(x.sub==="place"?"שנתה "+x.ans:fa(x.ans))+"</span></div></div>";}).join(""):"<p class='muted'>אין תרגילים כאלה – כל הכבוד! 🌟</p>";};
- $("fT").onchange=draw;$("fD").onchange=draw;draw();}
+ var fillT=function(){var d=$("fD").value,cur=$("fT").value,ts=[];rows.forEach(function(o){if((!d||jdate(o.at)===d)&&ts.indexOf(o.x.topic)<0)ts.push(o.x.topic);});$("fT").innerHTML="<option value=''>כל הנושאים</option>"+ts.map(function(t){return "<option value='"+t+"'>"+M.LABELS[t]+"</option>";}).join("");$("fT").value=ts.indexOf(cur)>=0?cur:"";};
+ $("fT").onchange=draw;$("fD").onchange=function(){fillT();draw();};draw();}
 // resume
 setTimeout(function(){cloudSync(true);},300);
 var ICON={nl:"📏",word:"📖",seder:"🧮",col:"➕",miss:"❓",mul:"✖️",fpic:"🍕",fnl:"📐",fcmp:"⚖️",fword:"📝",fops:"🍰",geo:"🔷",chart:"📊",fexp:"🔁",wmin:"✂️",comp1:"🧩",ineq:"🐊",zero1:"0️⃣",round:"🔟",poly:"⬠",terms:"🏷️",divis:"➗",prime:"🔑"};
