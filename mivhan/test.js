@@ -40,6 +40,8 @@ function chk(x){
  if(t==='round'){if(x.sub==='r')a.strictEqual(evx(x.expr.replace(/ =$/,'')),x.ans);else{const [l,r]=x.expr.replace('__',x.ans).split(' = ');a.strictEqual(evx(l),evx(r));}}
  if(t==='poly'){const n=x.geo?x.geo.pts.length:0;if(x.sub==='diag')a.strictEqual(x.ans,n*(n-3)/2);if(x.sub==='isdiag'||x.sub==='isside'){const L=x.geo.labels,ix=s=>[L.indexOf(s[0]),L.indexOf(s[1])],isSide=s=>{const [i,j]=ix(s);return (Math.abs(i-j)===1||Math.abs(i-j)===n-1);};const good=v.opts.filter(o=>x.sub==='isside'?isSide(o):!isSide(o));a.deepStrictEqual(good,[v.opts[v.ans]],JSON.stringify(v));}}
  if(t==='terms'&&x.tv){const [k,p,q]=x.tv;a.strictEqual([p+q,p-q,p*q,p/q][k],x.ans);}
+ if(t==='divis'){a(x.guide.length>=3);const [A,d]=x.dv;if(x.sub.startsWith('yn'))a.strictEqual(v.ans,A%d===0?0:1);else if(x.sub.startsWith('pick')){a.deepStrictEqual(v.ans,A.map((z,j)=>z%d===0?j:-1).filter(j=>j>=0));a(v.ans.length>0);}else{const ok=s=>[...s].reduce((q,c)=>q+ +c,0)%d===0;const w=x.sub==='dig9'?String(v.fields[0].want):v.opts[v.ans];a(ok(A.replace('□',w)),A);if(x.sub==='dig3')v.opts.forEach((o,j)=>j===v.ans||a(!ok(A.replace('□',o))));else a([0,1,2,3,4,5,6,7,8,9].filter(g=>ok(A.replace('□',g))).length===1,A);}}
+ if(t==='prime'){a(x.guide.length>=3);const ip=M.isPrime;if(x.sub==='yn')a.strictEqual(v.ans,ip(x.pv)?0:1);else if(x.sub==='pick')a.deepStrictEqual(v.ans,v.opts.map((o,j)=>ip(+o)?j:-1).filter(j=>j>=0));else a.deepStrictEqual(v.ans.map(j=>+v.opts[j]),v.opts.map(Number).filter(z=>x.pv%z===0));}
  if(t==='chart'){const C=x.chart;a(C.vals.every(z=>z%C.step===0&&z>0));if(v.t==='choice'){const m=x.prompt.includes('הרבה')?Math.max(...C.vals):Math.min(...C.vals);a.strictEqual(C.vals[v.ans],m);}}
  if(t==='geo'){const P=x.geo.pts,k=P.length,s=x.geo.hl,sel=v.ans.map(i=>v.opts[i]);const nm=i=>x.geo.labels[i]+x.geo.labels[(i+1)%k];
   if(x.sub==='adj')a.deepStrictEqual(sel.sort(),[nm((s+1)%k),nm((s+k-1)%k)].sort());
@@ -50,11 +52,11 @@ for(let i=0;i<600;i++){const test=i%7==0;const s=M.session({n:test?8:10,stats:i%
  for(const x of s){n++;cnt[x.topic]=(cnt[x.topic]||0)+1;chk(x);}
  if(prev.length)a.notDeepStrictEqual(s.map(x=>x.key),prev);prev=s.map(x=>x.key);}
 for(const t of M.TOPICS)for(let i=0;i<300;i++){const x=M.make(t,{});chk(x);}
-a.strictEqual(M.TOPICS.length,21);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
+a.strictEqual(M.TOPICS.length,23);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
 // weak weighting (13 topics: uniform≈0.08)
 const good={n:10,tries:10,help:0,first:10};const st={};M.TOPICS.forEach(t=>st[t]=good);st.fcmp={n:10,tries:28,help:4,first:1};
 let w=0,tot=0;for(let i=0;i<200;i++){const s=M.session({stats:st,counts:ALL});w+=s.filter(x=>x.topic==='fcmp').length;tot+=s.length;}
-a(w/tot>0.15,'weak '+w/tot);
+a(w/tot>0.13,'weak '+w/tot);
 // new topic block: old topics done -> first new topic in a block of 4
 const s0=M.session({counts:OLD});a.deepStrictEqual(s0.slice(0,4).map(x=>x.topic),['mul','mul','mul','mul']);
 const rv=M.session({review:[{topic:'seder',key:'X1',ans:3,expr:'1 + 2 =',stages:[{t:'fields',fields:[{lab:'',want:3}]}]}],counts:ALL});a(rv[0].review&&rv[0].key==='X1');

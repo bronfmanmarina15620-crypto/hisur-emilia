@@ -60,7 +60,7 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <h2 style="margin:14px 4px 4px">במה מתאמנות היום?</h2>
  <div class="tgrid" id="tGrid"></div>
  <div class="card"><h2 style="margin:0 0 6px">יוצאות לאימון 💜</h2>
- <div class="muted">21 נושאים: מספרים, סדר פעולות, כפל, שברים, הנדסה ודיאגרמות. כל תרגיל הוא שלב, וכל שלב מביא כוכבים.</div>
+ <div class="muted">23 נושאים: מספרים, סדר פעולות, כפל, שברים, הנדסה ודיאגרמות. כל תרגיל הוא שלב, וכל שלב מביא כוכבים.</div>
  <div class="stars" id="starLine" style="margin-top:8px"></div><div class="rw hidden" id="rwLine"></div>
  <label class="tog"><input type="checkbox" id="tTimer"> שעון רגוע (מראה כמה זמן תרגלת)</label></div>
  <button class="btn" id="bStart">🔀 תרגול מעורב · 10 שלבים מכל הנושאים</button>
@@ -111,10 +111,10 @@ input.pin,input.t{width:100%;font-size:18px;padding:9px;border-radius:12px;borde
  <div id="brTxt" style="font-size:17px">10 קפיצות במקום, 5 סיבובי ידיים, ולשתות מים.</div><div class="big hidden" id="brCnt">45</div>
  <button class="btn" id="bBrGo">יאללה, זזות!</button><button class="btn light" id="bBrSkip">דלגי, ממשיכות</button></div></div>
 
-<script src="../seder/engine.js?v=2026-10-29a"></script>
-<script src="engine.js?v=2026-10-29a"></script>
+<script src="../seder/engine.js?v=2026-11-01a"></script>
+<script src="engine.js?v=2026-11-01a"></script>
 <script>
-var APPVER="2026-10-29a",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=180000,M=Mivhan,S=Seder;
+var APPVER="2026-11-01a",KEY="mivhan_emilia_v1",PIN="2604",WA="972528995094",CAP=180000,M=Mivhan,S=Seder;
 var $=function(i){return document.getElementById(i);};
 function load(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.hist)return d;}catch(e){}return {hist:[],review:[],stars:0,counts:{},last:[],reward:null,settings:{}};}
 var db=load();db.review=db.review||[];db.counts=db.counts||{};db.settings=db.settings||{};db.stars=db.stars||0;
@@ -368,8 +368,8 @@ function renderParent(){var st=stats(),ks=Object.keys(st),sc=function(k){var o=s
 $("bRw").onclick=function(){var g=parseInt($("rwGoal").value,10);db.reward=g>0?{goal:g,text:$("rwText").value.trim()}:null;save();schedPush();$("rwMsg").textContent="נשמר ✓ · סה״כ כוכבים: "+db.stars;};
 // resume
 setTimeout(function(){cloudSync(true);},300);
-var ICON={nl:"📏",word:"📖",seder:"🧮",col:"➕",miss:"❓",mul:"✖️",fpic:"🍕",fnl:"📐",fcmp:"⚖️",fword:"📝",fops:"🍰",geo:"🔷",chart:"📊",fexp:"🔁",wmin:"✂️",comp1:"🧩",ineq:"🐊",zero1:"0️⃣",round:"🔟",poly:"⬠",terms:"🏷️"};
-var NEWT=["fexp","wmin","comp1","ineq","zero1","round","poly","terms"],FIRST=["fops"].concat(NEWT);
+var ICON={nl:"📏",word:"📖",seder:"🧮",col:"➕",miss:"❓",mul:"✖️",fpic:"🍕",fnl:"📐",fcmp:"⚖️",fword:"📝",fops:"🍰",geo:"🔷",chart:"📊",fexp:"🔁",wmin:"✂️",comp1:"🧩",ineq:"🐊",zero1:"0️⃣",round:"🔟",poly:"⬠",terms:"🏷️",divis:"➗",prime:"🔑"};
+var NEWT=["divis","prime"],FIRST=NEWT.concat(["fops","fexp","wmin","comp1","ineq","zero1","round","poly","terms"]);
 $("tGrid").innerHTML=FIRST.concat(M.TOPICS.filter(function(t){return FIRST.indexOf(t)<0;})).map(function(t){var nw=FIRST.indexOf(t)>=0;return '<button class="tbtn'+(nw?" new":"")+'" data-t="'+t+'">'+ICON[t]+" "+M.LABELS[t]+(NEWT.indexOf(t)>=0?"<small>חדש ✨</small>":"")+"</button>";}).join("");
 [].forEach.call(document.querySelectorAll(".tbtn"),function(b){b.onclick=function(){start("practice",b.dataset.t);};});
 $("bAll").onclick=function(){var q=cur();if(q)tPause(q);persist();flush();home();};
