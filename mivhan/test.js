@@ -19,15 +19,17 @@ function chk(x){
  if(t==='nl'){const L=x.nl;a(L.mark>0&&L.mark<L.n);a(L.start+L.n*L.step<=3000000);}
  if(t==='mul'){const [p,q]=x.expr.match(/\d+/g).map(Number);const f=v.fields;a.strictEqual(f[0].want+f[1].want,p*q);a.strictEqual(f[2].want,p*q);a(p>=12&&q>=12&&p<100&&q<100);a(!/\d{3}/.test(f[0].hints[0]+f[1].hints[0])||true);}
  if(t==='fpic'&&x.sub==='pic'){a.strictEqual(x.pic.sh.filter(Boolean).length,v.want[0]);a.strictEqual(x.pic.sh.length,v.want[1]);a.strictEqual(x.stages[1].opts[x.stages[1].ans],M.words(v.want[0],v.want[1]));}
- if(t==='fnl'){const L=x.fnl;a(L.k>0&&L.k<L.u*L.d&&L.k%L.d);if(L.mode==='read')a.deepStrictEqual(v.want,[L.k,L.d]);else a.strictEqual(v.ans,L.k);}
+ if(t==='fnl'){const L=x.fnl;a(L.k>0&&L.k<L.u*L.d&&L.k%L.d);a(L.u<=3&&L.d<=12);if(L.lab){a(L.N<=L.d&&L.lab[0]===0&&L.lab[L.lab.length-1]===L.N&&!L.lab.includes(L.k)&&L.k<L.N);for(let i=1;i<L.lab.length;i++)a(L.lab[i]-L.lab[i-1]>1,JSON.stringify(L));}if(L.mode==='read')a.deepStrictEqual(v.want,[L.k,L.d]);else a.strictEqual(v.ans,L.k);}
  if(t==='fcmp'){const [p,q,r,s]=x.expr.match(/\d+/g).map(Number);const d=p*s-r*q;a.strictEqual(v.opts[v.ans],d<0?'<':d?'>':'=');
   const c=x.stages[1].ans;if(c===0)a(q===s);if(c===1)a(p===r&&q!==s);if(c===2)a((2*p-q)*(2*r-s)<0);if(c===3)a((p-q)*(r-s)<0);}
  if(t==='fops'){const q=(n,d)=>n/d;const ev2=str=>{str=str.trim();let m=str.match(/^(\d+)\/(\d+)$/);if(m)return +m[1]/+m[2];if(/^\d+$/.test(str))return +str;const p=str.split(/ ([+−]) /);let r=ev2(p[0]);for(let i=1;i<p.length;i+=2)r+=(p[i]==='+'?1:-1)*ev2(p[i+1]);return r;};
   a(x.guide&&x.guide.length>=3);const nums=x.expr.match(/\d+/g).map(Number);a(nums.every(z=>z<=40));let e=x.expr;
-  if(v.t==='frac'){a(v.whole);a(v.want[1]<=20,e);const f=v.want[0]+'/'+v.want[1];e=e.includes('__')?e.replace('__',f):e.replace(/=$/,'= '+f);}
+  if(v.mixed){const [p1,q1,p2,q2]=e.match(/\d+/g).map(Number),op=e.includes('−')?-1:1,val=p1/q1+op*p2/q2,[W,Rn]=v.fields.map(f=>f.want),den=+v.fields[1].lab.split('/')[1];a(Rn>0&&Rn<den&&W>=1,e);a(Math.abs(val-(W+Rn/den))<1e-9,e);a.strictEqual(den,M.lcm(q1,q2),e);a(/מספר מעורב/.test(x.prompt));e=null;}
+  else if(v.t==='frac'){a(v.whole);a(v.want[1]<=30,e);const f=v.want[0]+'/'+v.want[1];e=e.includes('__')?e.replace('__',f):e.replace(/=$/,'= '+f);}
   else if(v.pair){a(M.pairOk(v.pair,v.fields[0].want,v.fields[1].want));a(!M.pairOk(v.pair,v.fields[0].want+1,v.fields[1].want));e=e.replace('□',v.fields[0].want).replace('□',v.fields[1].want);}
   else e=e.replace('□',v.fields[0].want);
-  const [l,r]=e.split(' = ');a(Math.abs(ev2(l)-ev2(r))<1e-9,e);a(!x.guide.join(' ').includes(' = '+x.ans+' ')||true);}
+  if(e){const [l,r]=e.split(' = ');a(Math.abs(ev2(l)-ev2(r))<1e-9,e);}
+  if(/^unrel/.test(x.sub)){const [,q1,,q2]=x.expr.match(/\d+/g).map(Number);a(q1!==q2&&q1%q2&&q2%q1&&q1<=12&&q2<=12,x.expr);}a(!x.guide.join(' ').includes(' = '+x.ans+' ')||true);}
  if(t==='fword')a(!(x.prompt.match(/\{[^}]+\}/g)||[]).some(f=>!/^\{\d+\/\d+\}$/.test(f)));
  const fv=f=>{const m=f.match(/^(\d+)\/(\d+)$/);return m?+m[1]/+m[2]:+f.replace(/,/g,'');};
  const evx=str=>{const p=str.trim().split(/ ([+−×:]) /);let r=fv(p[0]);for(let i=1;i<p.length;i+=2){const y=fv(p[i+1]),o=p[i];r=o==='+'?r+y:o==='−'?r-y:o==='×'?r*y:r/y;}return r;};
@@ -42,6 +44,8 @@ function chk(x){
  if(t==='terms'&&x.tv){const [k,p,q]=x.tv;a.strictEqual([p+q,p-q,p*q,p/q][k],x.ans);}
  if(t==='divis'){a(x.guide.length>=3);const [A,d]=x.dv;if(x.sub.startsWith('yn'))a.strictEqual(v.ans,A%d===0?0:1);else if(x.sub.startsWith('pick')){a.deepStrictEqual(v.ans,A.map((z,j)=>z%d===0?j:-1).filter(j=>j>=0));a(v.ans.length>0);}else{const ok=s=>[...s].reduce((q,c)=>q+ +c,0)%d===0;const w=x.sub==='dig9'?String(v.fields[0].want):v.opts[v.ans];a(ok(A.replace('□',w)),A);if(x.sub==='dig3')v.opts.forEach((o,j)=>j===v.ans||a(!ok(A.replace('□',o))));else a([0,1,2,3,4,5,6,7,8,9].filter(g=>ok(A.replace('□',g))).length===1,A);}}
  if(t==='prime'){a(x.guide.length>=3);const ip=M.isPrime;if(x.sub==='yn')a.strictEqual(v.ans,ip(x.pv)?0:1);else if(x.sub==='pick')a.deepStrictEqual(v.ans,v.opts.map((o,j)=>ip(+o)?j:-1).filter(j=>j>=0));else a.deepStrictEqual(v.ans.map(j=>+v.opts[j]),v.opts.map(Number).filter(z=>x.pv%z===0));}
+ if(t==='mixf'){const [W,r,d]=x.mx;a(d>=2&&d<=11&&W>=1&&W<=11&&r>=1&&r<d&&W*d+r<=110&&M.gcd(r,d)===1);a(x.guide.length>=3);
+  if(x.sub==='toMix'){a.deepStrictEqual(v.fields.map(f=>f.want),[W,r]);a.strictEqual(x.expr,(W*d+r)+'/'+d+' =');a(v.mixed);}else{a.deepStrictEqual(v.want,[W*d+r,d]);a.strictEqual(x.expr,W+' '+r+'/'+d+' =');}}
  if(t==='chart'){const C=x.chart;a(C.vals.every(z=>z%C.step===0&&z>0));if(v.t==='choice'){const m=x.prompt.includes('הרבה')?Math.max(...C.vals):Math.min(...C.vals);a.strictEqual(C.vals[v.ans],m);}}
  if(t==='geo'){const P=x.geo.pts,k=P.length,s=x.geo.hl,sel=v.ans.map(i=>v.opts[i]);const nm=i=>x.geo.labels[i]+x.geo.labels[(i+1)%k];
   if(x.sub==='adj')a.deepStrictEqual(sel.sort(),[nm((s+1)%k),nm((s+k-1)%k)].sort());
@@ -52,7 +56,7 @@ for(let i=0;i<600;i++){const test=i%7==0;const s=M.session({n:test?8:10,stats:i%
  for(const x of s){n++;cnt[x.topic]=(cnt[x.topic]||0)+1;chk(x);}
  if(prev.length)a.notDeepStrictEqual(s.map(x=>x.key),prev);prev=s.map(x=>x.key);}
 for(const t of M.TOPICS)for(let i=0;i<300;i++){const x=M.make(t,{});chk(x);}
-a.strictEqual(M.TOPICS.length,23);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
+a.strictEqual(M.TOPICS.length,24);M.TOPICS.forEach(t=>a(cnt[t]>0,'missing '+t));
 // weak weighting (13 topics: uniform≈0.08)
 const good={n:10,tries:10,help:0,first:10};const st={};M.TOPICS.forEach(t=>st[t]=good);st.fcmp={n:10,tries:28,help:4,first:1};
 let w=0,tot=0;for(let i=0;i<200;i++){const s=M.session({stats:st,counts:ALL});w+=s.filter(x=>x.topic==='fcmp').length;tot+=s.length;}
@@ -63,12 +67,19 @@ const rv=M.session({review:[{topic:'seder',key:'X1',ans:3,expr:'1 + 2 =',stages:
 let rep=0,dist=0;for(let i=0;i<300;i++){const s=M.session({counts:ALL});dist+=new Set(s.map(x=>x.topic)).size;for(let k=1;k<s.length;k++)if(s[k].topic===s[k-1].topic)rep++;}
 console.log('OK',n,'items',JSON.stringify(cnt),'weak share',(w/tot).toFixed(2),'avg topics/session',(dist/300).toFixed(1),'neighbour repeats',rep);
 
-const subs={};for(let i=0;i<3000;i++){const x=M.make('fops',{});subs[x.sub]=(subs[x.sub]||0)+1;}a(['same+','same-','whole','to1','to2','diff+','diff-','boxn','boxm','minuend','pair'].every(k=>subs[k]>0),JSON.stringify(subs));console.log('fops subs',JSON.stringify(subs));
+const subs={};for(let i=0;i<3000;i++){const x=M.make('fops',{});subs[x.sub]=(subs[x.sub]||0)+1;}a(['same+','same-','whole','to1','to2','diff+','diff-','boxn','boxm','minuend','pair','unrel+','unrel-'].every(k=>subs[k]>0),JSON.stringify(subs));console.log('fops subs',JSON.stringify(subs));
 for(let i=0;i<8;i++){const x=M.make('fops',{});console.log(x.expr,'->',x.ans);}
 for(const t of M.TOPICS){let pv=[];for(let k=0;k<20;k++){const s=M.session({only:t,prevKeys:pv,review:[{topic:'zz',key:'Z'}]});a.strictEqual(s.length,10,t);a(s.every(x=>x.topic===t),t);s.forEach(chk);pv=s.map(x=>x.key);}}
 console.log('topic sessions OK');
-a.strictEqual(M.EXAM.length,14);
+a.strictEqual(M.EXAM.length,17);
 const exOk=x=>M.EXAM.some(e=>e[1]===x.topic&&(!e[2]||new RegExp(e[2]).test(x.sub)));
 {let pv=[];for(let i=0;i<300;i++){const test=i%3==0;const s=M.session({exam:true,test,n:test?8:10,prevKeys:pv,stats:{},review:[{topic:'divis',key:'R1',sub:'yn2'}]});a.strictEqual(s.length,test?8:10);a(s.every(exOk),JSON.stringify(s.map(x=>x.topic+x.sub)));a.strictEqual(new Set(s.map(x=>x.key)).size,s.length);s.forEach(chk);for(let k=1;k<s.length;k++)a(s[k].ex!==s[k-1].ex);pv=s.map(x=>x.key);}}
 for(const e of M.EXAM){let pv=[];for(let k=0;k<15;k++){const s=M.session({only:e[0],prevKeys:pv});a.strictEqual(s.length,10,e[0]);a(s.every(x=>x.topic===e[1]&&(!e[2]||new RegExp(e[2]).test(x.sub))),e[0]);s.forEach(chk);pv=s.map(x=>x.key);}a(M.label(e[0]));}
 console.log('focus topics OK');
+// v5: new focus items, fnl variants, no duplicates in new topics
+{const fs={};for(let i=0;i<4000;i++){const x=M.make('fnl',{});const k=x.fnl.lab?'lab':'u'+x.fnl.u+'d'+x.fnl.d;fs[k]=(fs[k]||0)+1;}a(fs.lab>0&&fs.u1d12>0&&Object.keys(fs).some(k=>k.startsWith('u3')),JSON.stringify(fs));
+ let mixed=0;for(let i=0;i<3000;i++){const x=M.make('fops:diff',{});a(/^(diff|unrel)/.test(x.sub));chk(x);if(x.stages[0].mixed)mixed++;}a(mixed>0);
+ const ms={};for(let i=0;i<2000;i++){const x=M.make('mixf',{});chk(x);ms[x.sub]=1;}a(ms.toMix&&ms.toFrac);
+ for(const id of ['fops:diff','mixf','fexp']){let pv=[];for(let k=0;k<30;k++){const s=M.session({only:id,prevKeys:pv});a.strictEqual(s.length,10);a.strictEqual(new Set(s.map(x=>x.key)).size,10,id);a(!s.some(x=>pv.includes(x.key)),id);pv=s.map(x=>x.key);}}
+ for(let i=0;i<8;i++){const x=M.make('fops:diff',{}),y=M.make('mixf',{});console.log(x.expr,'->',x.ans,' | ',y.expr,'->',y.ans);}
+ console.log('v5 OK');}
