@@ -96,7 +96,29 @@ function mkFpic(){var d=P([2,3,4,5,6,8,10]),n=R(1,d-1);
  return {topic:"fpic",sub:"pic",prompt:"איזה חלק מהצורה צבוע?",pic:{shape:shape,sh:sh},ans:fr(n,d),
   stages:[{t:"frac",want:[n,d],exact:true,q:"כתבי כשבר:"},{t:"choice",opts:o,ans:o.indexOf(words(n,d)),q:"ואיך קוראים לשבר הזה?"}],key:"fp"+shape+sh.map(Number).join("")};}
 // fractions on number line
-function mkFnl(){var r=Math.random();
+// several fractions on the same line (like Orly's sheet 11.11)
+function mkFnlMulti(){var st=R(0,2),d,N,lab=null,u=1,j,cand=[],ks,m;
+ if(st===2){d=P([2,3,4,5,5,6,4,3]);u=P([2,3,3]);N=u*d;if(N>18)return null;for(j=1;j<N;j++)if(j%d)cand.push(j);}
+ else{d=P([5,6,8,10,12,12,8,6]);
+  if(st===0)N=d;else{N=P([d-1,d-2,d-3,d+1,d+2,d+3]);if(N<5||N>18)return null;}
+  var s=N>=8&&Math.random()<.6?P([2,3]):0,t,g;lab=[0];
+  if(s){var top=st===0||Math.random()<.5?N:N-R(1,s);for(j=s;j<=top;j+=s)lab.push(j);}
+  else{lab.push(st===0||Math.random()<.7?N:N-R(1,2));for(g=0;g<12&&lab.length<R(3,4);g++){t=R(2,N-2);if(lab.every(function(l){return Math.abs(l-t)>1;}))lab.push(t);}}
+  if(st===0&&lab.indexOf(N)<0)lab.push(N);
+  if(N>d&&lab.indexOf(d)<0&&Math.random()<.5)lab.push(d);
+  lab=lab.filter(function(x,i,arr){return arr.indexOf(x)===i&&x<=N;}).sort(function(x,y){return x-y;});
+  if(lab.length<2)return null;
+  for(j=1;j<=N;j++)if(lab.indexOf(j)<0)cand.push(j);}
+ if(cand.length<3)return null;m=Math.min(cand.length,R(4,6));ks=shuf(cand).slice(0,m);
+ if(st===2&&ks.filter(function(k){return k>d;}).length<2)return null;
+ var sorted=ks.slice().sort(function(a,b){return a-b;}),fl=ks.map(function(k){return fr(k,d);});
+ var nl={u:u,d:d,mode:"multi",ks:ks};if(lab){nl.N=N;nl.lab=lab;}
+ var H=lab?["השברים שבמקום הנכון נשארו ירוקים ✓. לשאר: הסתכלי על שני שברים שכתובים על הישר – כמה קפיצות ביניהם? כך תדעי כמה שווה כל קפיצה.","התחילי משבר כתוב שקרוב לשבר שלך, וספרי קפיצות קדימה או אחורה. שימי לב: הישר לא תמיד נגמר ב־1."]
+  :["השברים שבמקום הנכון נשארו ירוקים ✓. לשאר: לכמה חלקים שווים מחולק כל שלם (מ־0 עד 1)? זה המכנה – כל קפיצה היא 1/"+d+".","שבר שהמונה שלו גדול מהמכנה נמצא אחרי 1. ספרי קפיצות מהשלם הכתוב הקרוב (1 = "+d+"/"+d+", 2 = "+(2*d)+"/"+d+")."];
+ return {topic:"fnl",sub:"multi",prompt:"מקמי את כל השברים על הישר: געי בשבר ואז בשנתה שלו"+(lab?" (שימי לב לשברים שכתובים על הישר)":"")+".",expr:"",fnl:nl,ans:fl.join(", "),hints:H,
+  stages:[{t:"mtick",ks:ks,d:d}],key:"fnM"+d+"/"+N+"/"+(lab?lab.join(","):"w")+"/"+sorted.join(","),
+  guide:["כל קפיצה בין שתי שנתות שכנות שווה 1/"+d+".","כדי למקם שבר סופרים קפיצות לפי המונה: מ־0, או משבר או שלם כתוב שקרוב אליו.","עברו יחד שבר אחרי שבר, ובדקו כל אחד בספירה."]};}
+function mkFnl(){var r=Math.random();if(r<.25)return mkFnlMulti();r=Math.random();
  if(r<.3){var d=P([6,8,10,12,12]),N=Math.random()<.5?d:R(Math.max(4,d-4),d-1),lab=[0,N],c=R(1,2),j;for(j=0;j<c;j++){var t=R(2,N-2);if(lab.every(function(l){return Math.abs(l-t)>1;}))lab.push(t);}lab.sort(function(a,b){return a-b;});
   var free=[];for(j=1;j<N;j++)if(lab.indexOf(j)<0)free.push(j);if(!free.length)return null;var k=P(free),mode=Math.random()<.5?"read":"place",nl={u:1,d:d,k:k,mode:mode,N:N,lab:lab};
   return {topic:"fnl",sub:"lab"+mode,hints:["הסתכלי על שני שברים שכתובים על הישר: כמה קפיצות יש ביניהם? כך תדעי כמה שווה כל קפיצה.","התחילי משבר כתוב שקרוב ל"+(mode==="read"?"חץ":"מקום")+", וספרי קפיצות."],prompt:mode==="read"?"איזה שבר מסומן בחץ? (שימי לב לשברים שכתובים על הישר)":"געי בשנתה של השבר (שימי לב לשברים שכתובים על הישר):",expr:mode==="place"?fr(k,d):"",fnl:nl,ans:mode==="read"?fr(k,d):k,
@@ -297,7 +319,7 @@ function mkMixf(){var d=R(2,11),W=R(1,11),r=R(1,d-1),n=W*d+r;if(n>110||gcd(r,d)!
   guide:["כל שלם הוא "+fr(d,d)+". כופלות את השלמים במכנה: "+W+" × "+d+".","מוסיפות את המונה "+r+" – זה המונה החדש.","המכנה נשאר "+d+"."]};}
 var MK={mixf:mkMixf,divis:mkDivis,prime:mkPrime,fexp:mkFexp,wmin:mkWmin,comp1:mkComp1,ineq:mkIneq,zero1:mkZero1,round:mkRound,poly:mkPoly,terms:mkTerms,mul:mkMul,fpic:mkFpic,fnl:mkFnl,fcmp:mkFcmp,fword:mkFword,fops:mkFops,geo:mkGeo,chart:mkChart,nl:mkNL,word:mkWord,seder:mkSeder,col:mkCol,miss:mkMiss};
 var EXAM=[["nl","nl",null,"מספרים גדולים על ישר המספרים"],["word","word",null,"שאלות מילוליות (חיבור, חיסור, כפל)"],["mul","mul",null,"כפל דו־ספרתי בדו־ספרתי"],["seder","seder",null,"סדר פעולות"],["col","col",null,"חיבור וחיסור במאונך"],["miss","miss",null,"משוואות: מספר חסר"],
- ["fpic","fpic",null,"זיהוי שבר – במילים ובמספרים"],["fnl","fnl",null,"שברים על ישר המספרים"],["fcmp:r","fcmp","^c[23]$","השוואת שברים עם נימוק (חצי, שלם)"],["fword","fword",null,"שאלות מילוליות עם שברים"],
+ ["fpic","fpic",null,"זיהוי שבר – במילים ובמספרים"],["fnl","fnl",null,"שברים על ישר המספרים"],["fnl:multi","fnl","^multi$","כמה שברים על אותו ישר"],["fcmp:r","fcmp","^c[23]$","השוואת שברים עם נימוק (חצי, שלם)"],["fword","fword",null,"שאלות מילוליות עם שברים"],
  ["fops:same","fops","^same","חיבור וחיסור שברים – אותו מכנה"],["fops:diff","fops","^(diff|unrel)","חיבור וחיסור שברים – מכנים שונים"],["mixf","mixf",null,"שבר מדומה ↔ מספר מעורב"],["fexp","fexp",null,"הרחבה וצמצום שברים"],["geo:par","geo","^par$","זיהוי צלעות מקבילות"],["geo:adj","geo","^adj$","זיהוי צלעות סמוכות"],["chart","chart",null,"דיאגרמות"]];
 function exEntry(id){for(var i=0;i<EXAM.length;i++)if(EXAM[i][0]===id&&id.indexOf(":")>0)return EXAM[i];return null;}
 function label(id){var e=exEntry(id);return e?e[3]:LABELS[id];}

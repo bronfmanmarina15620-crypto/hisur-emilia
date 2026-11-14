@@ -9,7 +9,13 @@ function chk(x){
   else if(st.t==='frac')a(st.want[0]>0&&st.want[1]>1&&Number.isInteger(st.want[0]),JSON.stringify(x));
   else if(st.t==='choice')a(st.ans>=0&&st.ans<st.opts.length&&new Set(st.opts).size===st.opts.length,JSON.stringify(x));
   else if(st.t==='multi')a(st.ans.length&&st.ans.every(i=>i>=0&&i<st.opts.length));
-  else if(st.t==='tick')a(Number.isInteger(st.ans));else a.fail(st.t);}
+  else if(st.t==='tick')a(Number.isInteger(st.ans));
+  else if(st.t==='mtick'){const L=x.fnl,N=L.N||L.u*L.d;a.strictEqual(L.mode,'multi');a.strictEqual(st.d,L.d);a(st.ks.length>=3&&st.ks.length<=6,JSON.stringify(x));a.strictEqual(new Set(st.ks).size,st.ks.length);
+   a(N<=18&&L.d<=12&&N/L.d<=3,JSON.stringify(L));
+   for(const k of st.ks){a(Number.isInteger(k)&&k>=1&&k<=N,JSON.stringify(x));if(L.lab)a(!L.lab.includes(k),'on label '+JSON.stringify(x));else a(k%L.d!==0,JSON.stringify(x));}
+   if(L.lab){a(L.lab[0]===0&&L.lab.length>=2&&L.lab.every(l=>Number.isInteger(l)&&l>=0&&l<=N));}else a(st.ks.filter(k=>k>L.d).length>=2);
+   a.strictEqual(x.ans,st.ks.map(k=>k+'/'+L.d).join(', '));a(x.hints.length>=2&&x.guide.length>=3);a(!/מבחן/.test(x.prompt+x.hints.join('')+x.guide.join('')));}
+  else a.fail(st.t);}
  const t=x.topic,v=x.stages[0];
  if(['nl','word','seder','col','miss'].includes(t))a(Number.isInteger(x.ans)&&x.ans>=0);
  if(t==='seder')a.strictEqual(ev(x.expr),x.ans);
@@ -19,7 +25,7 @@ function chk(x){
  if(t==='nl'){const L=x.nl;a(L.mark>0&&L.mark<L.n);a(L.start+L.n*L.step<=3000000);}
  if(t==='mul'){const [p,q]=x.expr.match(/\d+/g).map(Number);const f=v.fields;a.strictEqual(f[0].want+f[1].want,p*q);a.strictEqual(f[2].want,p*q);a(p>=12&&q>=12&&p<100&&q<100);a(!/\d{3}/.test(f[0].hints[0]+f[1].hints[0])||true);}
  if(t==='fpic'&&x.sub==='pic'){a.strictEqual(x.pic.sh.filter(Boolean).length,v.want[0]);a.strictEqual(x.pic.sh.length,v.want[1]);a.strictEqual(x.stages[1].opts[x.stages[1].ans],M.words(v.want[0],v.want[1]));}
- if(t==='fnl'){const L=x.fnl;a(L.k>0&&L.k<L.u*L.d&&L.k%L.d);a(L.u<=3&&L.d<=12);if(L.lab){a(L.N<=L.d&&L.lab[0]===0&&L.lab[L.lab.length-1]===L.N&&!L.lab.includes(L.k)&&L.k<L.N);for(let i=1;i<L.lab.length;i++)a(L.lab[i]-L.lab[i-1]>1,JSON.stringify(L));}if(L.mode==='read')a.deepStrictEqual(v.want,[L.k,L.d]);else a.strictEqual(v.ans,L.k);}
+ if(t==='fnl'&&x.sub!=='multi'){const L=x.fnl;a(L.k>0&&L.k<L.u*L.d&&L.k%L.d);a(L.u<=3&&L.d<=12);if(L.lab){a(L.N<=L.d&&L.lab[0]===0&&L.lab[L.lab.length-1]===L.N&&!L.lab.includes(L.k)&&L.k<L.N);for(let i=1;i<L.lab.length;i++)a(L.lab[i]-L.lab[i-1]>1,JSON.stringify(L));}if(L.mode==='read')a.deepStrictEqual(v.want,[L.k,L.d]);else a.strictEqual(v.ans,L.k);}
  if(t==='fcmp'){const [p,q,r,s]=x.expr.match(/\d+/g).map(Number);const d=p*s-r*q;a.strictEqual(v.opts[v.ans],d<0?'<':d?'>':'=');
   const c=x.stages[1].ans;if(c===0)a(q===s);if(c===1)a(p===r&&q!==s);if(c===2)a((2*p-q)*(2*r-s)<0);if(c===3)a((p-q)*(r-s)<0);}
  if(t==='fops'){const q=(n,d)=>n/d;const ev2=str=>{str=str.trim();let m=str.match(/^(\d+)\/(\d+)$/);if(m)return +m[1]/+m[2];if(/^\d+$/.test(str))return +str;const p=str.split(/ ([+−]) /);let r=ev2(p[0]);for(let i=1;i<p.length;i+=2)r+=(p[i]==='+'?1:-1)*ev2(p[i+1]);return r;};
@@ -71,7 +77,7 @@ const subs={};for(let i=0;i<3000;i++){const x=M.make('fops',{});subs[x.sub]=(sub
 for(let i=0;i<8;i++){const x=M.make('fops',{});console.log(x.expr,'->',x.ans);}
 for(const t of M.TOPICS){let pv=[];for(let k=0;k<20;k++){const s=M.session({only:t,prevKeys:pv,review:[{topic:'zz',key:'Z'}]});a.strictEqual(s.length,10,t);a(s.every(x=>x.topic===t),t);s.forEach(chk);pv=s.map(x=>x.key);}}
 console.log('topic sessions OK');
-a.strictEqual(M.EXAM.length,17);
+a.strictEqual(M.EXAM.length,18);
 const exOk=x=>M.EXAM.some(e=>e[1]===x.topic&&(!e[2]||new RegExp(e[2]).test(x.sub)));
 {let pv=[];for(let i=0;i<300;i++){const test=i%3==0;const s=M.session({exam:true,test,n:test?8:10,prevKeys:pv,stats:{},review:[{topic:'divis',key:'R1',sub:'yn2'}]});a.strictEqual(s.length,test?8:10);a(s.every(exOk),JSON.stringify(s.map(x=>x.topic+x.sub)));a.strictEqual(new Set(s.map(x=>x.key)).size,s.length);s.forEach(chk);for(let k=1;k<s.length;k++)a(s[k].ex!==s[k-1].ex);pv=s.map(x=>x.key);}}
 for(const e of M.EXAM){let pv=[];for(let k=0;k<15;k++){const s=M.session({only:e[0],prevKeys:pv});a.strictEqual(s.length,10,e[0]);a(s.every(x=>x.topic===e[1]&&(!e[2]||new RegExp(e[2]).test(x.sub))),e[0]);s.forEach(chk);pv=s.map(x=>x.key);}a(M.label(e[0]));}
@@ -83,3 +89,20 @@ console.log('focus topics OK');
  for(const id of ['fops:diff','mixf','fexp']){let pv=[];for(let k=0;k<30;k++){const s=M.session({only:id,prevKeys:pv});a.strictEqual(s.length,10);a.strictEqual(new Set(s.map(x=>x.key)).size,10,id);a(!s.some(x=>pv.includes(x.key)),id);pv=s.map(x=>x.key);}}
  for(let i=0;i<8;i++){const x=M.make('fops:diff',{}),y=M.make('mixf',{});console.log(x.expr,'->',x.ans,' | ',y.expr,'->',y.ans);}
  console.log('v5 OK');}
+
+// v6 (14.11): several fractions on one line
+{const kinds={},seenK=new Set();let mcount=0;
+ for(let i=0;i<6000;i++){const x=M.make('fnl:multi',{});a.strictEqual(x.sub,'multi');chk(x);const L=x.fnl,N=L.N||L.u*L.d;
+  const kind=!L.lab?'whole'+L.u:N===L.d?'to1':'not1';kinds[kind]=(kinds[kind]||0)+1;
+  if(L.lab&&!L.lab.includes(N))kinds.unlabEnd=(kinds.unlabEnd||0)+1;if(L.lab&&L.lab.length<N/2)kinds.partial=(kinds.partial||0)+1;if(L.d===12)kinds.d12=(kinds.d12||0)+1;
+  seenK.add(x.key);}
+ for(const k of ['whole2','whole3','to1','not1','unlabEnd','partial','d12'])a(kinds[k]>0,'missing kind '+k+' '+JSON.stringify(kinds));
+ a(seenK.size>500,'variety '+seenK.size);
+ // dedup inside & across sessions
+ let pv=[];for(let k=0;k<40;k++){const s=M.session({only:'fnl:multi',prevKeys:pv});a.strictEqual(s.length,10);a.strictEqual(new Set(s.map(x=>x.key)).size,10);a(!s.some(x=>pv.includes(x.key)));a(s.every(x=>x.sub==='multi'));pv=s.map(x=>x.key);}
+ // appears in general fnl practice and in exam mixes
+ for(let i=0;i<4000;i++)if(M.make('fnl',{}).sub==='multi')mcount++;a(mcount>500&&mcount<1800,mcount);
+ let inMix=0;for(let i=0;i<400;i++){const s=M.session({exam:true,n:10,prevKeys:[],stats:{}});inMix+=s.filter(x=>x.ex==='fnl:multi'||x.sub==='multi').length;}a(inMix>0,'not in exam mix');
+ a.strictEqual(M.label('fnl:multi'),'כמה שברים על אותו ישר');
+ for(let i=0;i<5;i++){const x=M.make('fnl:multi',{});console.log(JSON.stringify({d:x.fnl.d,N:x.fnl.N||x.fnl.u*x.fnl.d,lab:x.fnl.lab||'whole'}),'->',x.ans);}
+ console.log('v6 multi OK',JSON.stringify(kinds));}
