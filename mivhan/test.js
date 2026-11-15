@@ -6,7 +6,7 @@ function chk(x){
  a(x.stages&&x.stages.length,JSON.stringify(x));
  for(const st of x.stages){
   if(st.t==='fields')st.fields.forEach(f=>a(Number.isInteger(f.want)&&f.want>=0,JSON.stringify(x)));
-  else if(st.t==='frac')a(st.want[0]>0&&st.want[1]>1&&Number.isInteger(st.want[0]),JSON.stringify(x));
+  else if(st.t==='frac')a(st.want[0]>0&&(st.want[1]>1||(st.red&&st.whole&&st.want[1]===1))&&Number.isInteger(st.want[0]),JSON.stringify(x));
   else if(st.t==='choice')a(st.ans>=0&&st.ans<st.opts.length&&new Set(st.opts).size===st.opts.length,JSON.stringify(x));
   else if(st.t==='multi')a(st.ans.length&&st.ans.every(i=>i>=0&&i<st.opts.length));
   else if(st.t==='tick')a(Number.isInteger(st.ans));
@@ -30,7 +30,7 @@ function chk(x){
   const c=x.stages[1].ans;if(c===0)a(q===s);if(c===1)a(p===r&&q!==s);if(c===2)a((2*p-q)*(2*r-s)<0);if(c===3)a((p-q)*(r-s)<0);}
  if(t==='fops'){const q=(n,d)=>n/d;const ev2=str=>{str=str.trim();let m=str.match(/^(\d+)\/(\d+)$/);if(m)return +m[1]/+m[2];if(/^\d+$/.test(str))return +str;const p=str.split(/ ([+−]) /);let r=ev2(p[0]);for(let i=1;i<p.length;i+=2)r+=(p[i]==='+'?1:-1)*ev2(p[i+1]);return r;};
   a(x.guide&&x.guide.length>=3);const nums=x.expr.match(/\d+/g).map(Number);a(nums.every(z=>z<=40));let e=x.expr;
-  if(v.mixed){const [p1,q1,p2,q2]=e.match(/\d+/g).map(Number),op=e.includes('−')?-1:1,val=p1/q1+op*p2/q2,[W,Rn]=v.fields.map(f=>f.want),den=+v.fields[1].lab.split('/')[1];a(Rn>0&&Rn<den&&W>=1,e);a(Math.abs(val-(W+Rn/den))<1e-9,e);a.strictEqual(den,M.lcm(q1,q2),e);a(/מספר מעורב/.test(x.prompt));e=null;}
+  if(v.mixed){const [p1,q1,p2,q2]=e.match(/\d+/g).map(Number),op=e.includes('−')?-1:1,val=p1/q1+op*p2/q2,[W,Rn,den]=v.fields.map(f=>f.want);a(v.red);a(Rn>0&&Rn<den&&W>=1&&M.gcd(Rn,den)===1,e);a(Math.abs(val-(W+Rn/den))<1e-9,e);a.strictEqual(M.lcm(q1,q2)%den,0,e);a(/מספר מעורב/.test(x.prompt));e=null;}
   else if(v.t==='frac'){a(v.whole);a(v.want[1]<=30,e);const f=v.want[0]+'/'+v.want[1];e=e.includes('__')?e.replace('__',f):e.replace(/=$/,'= '+f);}
   else if(v.pair){a(M.pairOk(v.pair,v.fields[0].want,v.fields[1].want));a(!M.pairOk(v.pair,v.fields[0].want+1,v.fields[1].want));e=e.replace('□',v.fields[0].want).replace('□',v.fields[1].want);}
   else e=e.replace('□',v.fields[0].want);
@@ -106,3 +106,27 @@ console.log('focus topics OK');
  a.strictEqual(M.label('fnl:multi'),'כמה שברים על אותו ישר');
  for(let i=0;i<5;i++){const x=M.make('fnl:multi',{});console.log(JSON.stringify({d:x.fnl.d,N:x.fnl.N||x.fnl.u*x.fnl.d,lab:x.fnl.lab||'whole'}),'->',x.ans);}
  console.log('v6 multi OK',JSON.stringify(kinds));}
+
+// v7 (15.11): Orly – final answers must be reduced
+{const J=M.judgeRed,g=M.gcd;let nRed=0,nRaw=0,nWhole=0,nMix=0;
+ // unit cases
+ a.strictEqual(J({t:'frac',want:[1,2]},[1,2]),'ok');a.strictEqual(J({t:'frac',want:[1,2]},[3,6]),'unred');a.strictEqual(J({t:'frac',want:[1,2]},[2,6]),'no');
+ a.strictEqual(J({t:'frac',want:[1,1],whole:true},[1,1]),'ok');a.strictEqual(J({t:'frac',want:[1,1],whole:true},[6,6]),'unwhole');
+ const mx={t:'fields',mixed:true,red:true,fields:[{want:1},{want:1},{want:2}]};
+ a.strictEqual(J(mx,[1,1,2]),'ok');a.strictEqual(J(mx,[1,3,6]),'unred');a.strictEqual(J(mx,[0,9,6]),'unmix');a.strictEqual(J(mx,[1,1,3]),'no');a.strictEqual(J(mx,[1,1,0]),'no');
+ const redStages=x=>x.stages.filter(st=>st.red);
+ for(const id of ['fops','fops:diff','fops:same','fword','comp1','mixf']){for(let i=0;i<3000;i++){const x=M.make(id,{});for(const st of redStages(x)){nRed++;
+   if(st.t==='frac'){const [n,d]=st.want;a(d===1||g(n,d)===1,JSON.stringify(x));a.strictEqual(J(st,[n,d]),'ok');a.strictEqual(x.ans,d===1?String(n):n+'/'+d,JSON.stringify(x));
+     a.strictEqual(J(st,[n*2,d*2]),d===1?'unwhole':'unred');a.strictEqual(J(st,[n*3,d*3]),d===1?'unwhole':'unred');a.strictEqual(J(st,[n+1,d]),'no');if(d===1)nWhole++;}
+   else{nMix++;const [W,n,d]=st.fields.map(f=>f.want);a(g(n,d)===1&&n<d);a.strictEqual(J(st,[W,n,d]),'ok');a.strictEqual(J(st,[W,2*n,2*d]),'unred');a.strictEqual(J(st,[W-1,n+d,d]),'unmix');a.strictEqual(x.ans,W+' '+n+'/'+d);}
+   if(x.raw&&(x.raw[0]%x.raw[1]===0||g(x.raw[0],x.raw[1])>1)){nRaw++;a(x.guide.some(z=>/מצמצמות/.test(z)),'guide lacks reduction '+JSON.stringify(x));}
+   if(x.raw)a(x.guide.some(z=>/צמצ/.test(z)),'guide '+JSON.stringify(x));
+   a(!/מבחן/.test(JSON.stringify(x)));}}}
+ a(nRaw>200&&nWhole>20&&nMix>200,JSON.stringify({nRed,nRaw,nWhole,nMix}));
+ // fexp explicit expand/reduce untouched (exact, not red)
+ for(let i=0;i<2000;i++){const x=M.make('fexp',{});a(!x.stages.some(st=>st.red));if(x.stages[0].t==='frac')a(x.stages[0].exact);}
+ // fnl reading still accepts equivalent (not red)
+ for(let i=0;i<500;i++){const x=M.make('fnl',{});a(!x.stages.some(st=>st.red));}
+ a(!/שבר שווה/.test(M.HINTS.fops.join(' ')));a(/צמצ/.test(M.HINTS.fops.join(' ')));
+ let pv=[];for(let k=0;k<30;k++){const s=M.session({only:'fops:diff',prevKeys:pv});a.strictEqual(new Set(s.map(x=>x.key)).size,10);a(!s.some(x=>pv.includes(x.key)));pv=s.map(x=>x.key);}
+ console.log('v7 reduce OK',JSON.stringify({nRed,nRaw,nWhole,nMix}));}
