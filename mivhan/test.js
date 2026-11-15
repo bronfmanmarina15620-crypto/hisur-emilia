@@ -130,3 +130,22 @@ console.log('focus topics OK');
  a(!/שבר שווה/.test(M.HINTS.fops.join(' ')));a(/צמצ/.test(M.HINTS.fops.join(' ')));
  let pv=[];for(let k=0;k<30;k++){const s=M.session({only:'fops:diff',prevKeys:pv});a.strictEqual(new Set(s.map(x=>x.key)).size,10);a(!s.some(x=>pv.includes(x.key)));pv=s.map(x=>x.key);}
  console.log('v7 reduce OK',JSON.stringify({nRed,nRaw,nWhole,nMix}));}
+// v8 (15.11b): home sections – quiz / math / geo
+{const Q=M.QUIZ;a(/^\d{4}-\d\d-\d\d$/.test(Q.date)&&Q.items.length>=1);
+ const bad=/מבחן|מבדק|בוחן/;a(!bad.test(Q.title+Q.what+Object.values(M.SECN).join('')+JSON.stringify(M.GROUPS)),'test word on child screen');
+ a.deepStrictEqual(Q.items,['fops:diff','fops:same','fexp','mixf']);
+ for(const s of ['quiz','math','geo'])a(M.secList(s).length===M.secIds(s).length&&M.secList(s).every(e=>e&&e[3]),s);
+ const tp=s=>new Set(M.secList(s).map(e=>e[1]));
+ for(const t of M.TOPICS)a(tp('math').has(t)||tp('geo').has(t),'topic not in any section '+t);
+ a([...tp('geo')].every(t=>t==='geo'||t==='poly'));a(![...tp('math')].some(t=>t==='geo'||t==='poly'));
+ a(M.secIds('math').includes('nl')&&M.secIds('math').includes('fnl')&&M.secIds('math').includes('fnl:multi'));
+ a.strictEqual(new Set(M.secIds('math')).size,M.secIds('math').length);
+ a(M.GROUPS.math.length>=4&&M.GROUPS.math.every(g=>g[0]&&g[1]&&g[2].length));
+ for(const s of ['quiz','math','geo']){let pv=[];const ok=x=>M.secList(s).some(e=>e[1]===x.topic&&(!e[2]||new RegExp(e[2]).test(x.sub)));
+  for(let k=0;k<60;k++){const test=k%4===0;const ss=M.session({exam:true,sec:s,test,n:test?8:10,prevKeys:pv,stats:{},review:[]});a.strictEqual(ss.length,test?8:10,s);
+   a(ss.every(ok),s+' '+ss.map(x=>x.topic+x.sub));a.strictEqual(new Set(ss.map(x=>x.key)).size,ss.length,s);a(!ss.some(x=>pv.includes(x.key)),s);ss.forEach(chk);pv=ss.map(x=>x.key);}}
+ // every quiz item & math/geo entry works as focus practice
+ for(const id of [...M.secIds('quiz'),...M.secIds('math'),...M.secIds('geo')]){const ss=M.session({only:id,prevKeys:[]});a.strictEqual(ss.length,10,id);ss.forEach(chk);}
+ // quiz review items only from quiz topics
+ const rv=M.session({exam:true,sec:'quiz',n:10,stats:{},prevKeys:[],review:[{topic:'geo',sub:'par',key:'G1'},{topic:'mixf',sub:'toMix',key:'MX1',stages:[{t:'fields',fields:[{want:1}]}]}]});a(!rv.some(x=>x.key==='G1'));
+ console.log('v8 sections OK',JSON.stringify({quiz:M.secIds('quiz').length,math:M.secIds('math').length,geo:M.secIds('geo').length}));}
