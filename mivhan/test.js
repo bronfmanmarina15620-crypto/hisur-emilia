@@ -149,3 +149,10 @@ console.log('focus topics OK');
  // quiz review items only from quiz topics
  const rv=M.session({exam:true,sec:'quiz',n:10,stats:{},prevKeys:[],review:[{topic:'geo',sub:'par',key:'G1'},{topic:'mixf',sub:'toMix',key:'MX1',stages:[{t:'fields',fields:[{want:1}]}]}]});a(!rv.some(x=>x.key==='G1'));
  console.log('v8 sections OK',JSON.stringify({quiz:M.secIds('quiz').length,math:M.secIds('math').length,geo:M.secIds('geo').length}));}
+// v9 (15.11c): home = math practice directly; hub link; geometry only via ?section=geo
+{const H=require('fs').readFileSync(__dirname+'/index.html','utf8');
+ a(H.includes('href="https://bronfmanmarina15620-crypto.github.io/limudim-emilia/"')&&H.includes('← הלימודים של אמיליה'));
+ for(const u of ['kefel-emilia','hiluk-emilia','geometry-emilia'])a(!H.includes(u),'link should be removed: '+u);
+ a(!H.includes('data-sec='),'old subject cards still present');a(/section=geo/.test(H));
+ const start=H.slice(H.indexOf('<div id="vStart">'),H.indexOf('<div id="vPin"'));a(!/מבחן|מבדק|בוחן/.test(start),'test word on child screen');
+ console.log('v9 home OK');}
